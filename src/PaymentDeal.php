@@ -77,13 +77,13 @@ class PaymentDeal
             exit();
         }
 
+        $this->gateway = $exist->gateway;
+        $this->orderId = $exist->request_payload['response']['id'] ?? '';
+
         $this->setPaymentResponse($this->checkGatewayCredentials());
         if ($this->getPaymentResponse()['isError']) {
             exit();
         }
-
-        $this->gateway = $exist->gateway;
-        $this->orderId = $exist->request_payload['response']['id'] ?? '';
 
         $this->setPaymentResponse(false, true, 'success', 200, 'Transaction validated successfully');
     }
