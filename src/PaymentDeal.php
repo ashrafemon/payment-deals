@@ -119,6 +119,8 @@ class PaymentDeal
         if (!$this->paymentGateway = PaymentGateway::query()->where(['type' => $this->gateway])->first()) {
             return $this->responseGenerator(true, false, 'error', 404, 'Payment gateway not found', null);
         }
+
+        return $this->responseGenerator(false, true, 'success', 200, 'Payment gateway found', null);
     }
 
     private function setRedirectionUrls()
