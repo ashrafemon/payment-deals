@@ -35,6 +35,10 @@ class PaypalService implements PaymentContract
     public function tokenBuilder()
     {
         try {
+            if (!$this->appKey || !$this->secretKey) {
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid credentials');
+            }
+
             $client = Http::withBasicAuth($this->appKey, $this->secretKey)
                 ->withHeaders(['Content-Type' => 'application/x-www-form-urlencoded'])
                 ->asForm()
