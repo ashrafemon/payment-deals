@@ -66,14 +66,14 @@ class PaymentDeal
     private function transactionCheck($transactionId)
     {
         if (!$exist = PaymentTransaction::query()->where(['type' => 'pre', 'transaction_id' => $transactionId])->first()) {
-            $this->setPaymentResponse($this->responseGenerator(true, false, 'error', 404, 'Payment transaction not found', null));
+            $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction not found'));
             exit();
         }
 
         $this->transactionId = $exist->transaction_id;
 
         if (!in_array($exist->gateway, ['paypal', 'stripe', 'razor_pay', 'bkash'])) {
-            $this->setPaymentResponse($this->responseGenerator(true, false, 'error', 404, 'Payment transaction invalid gateway', null));
+            $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction invalid gateway'));
             exit();
         }
 
@@ -85,7 +85,7 @@ class PaymentDeal
             exit();
         }
 
-        $this->setPaymentResponse($this->responseGenerator(false, true, 'success', 200, 'Transaction validated successfully', null));
+        $this->setPaymentResponse($this->leafwrapResponse(false, true, 'success', 200, 'Transaction validated successfully'));
     }
 
     public function getPaymentResponse()
@@ -96,10 +96,10 @@ class PaymentDeal
     private function checkGatewayCredentials()
     {
         if (!$this->paymentGateway = PaymentGateway::query()->where(['type' => $this->gateway])->first()) {
-            return $this->responseGenerator(true, false, 'error', 404, 'Payment gateway not found', null);
+            return $this->leafwrapResponse(true, false, 'error', 404, 'Payment gateway not found');
         }
 
-        return $this->responseGenerator(false, true, 'success', 200, 'Payment gateway found', null);
+        return $this->leafwrapResponse(false, true, 'success', 200, 'Payment gateway found');
     }
 
     private function setRedirectionUrls()
@@ -113,7 +113,13 @@ class PaymentDeal
     private function paymentRequestActivity($data)
     {
         if (!$exist = PaymentTransaction::query()->where(['transaction_id' => $this->transactionId])->first()) {
-            $payload = ['transaction_id' => $this->transactionId, 'user_id' => $this->userId, 'gateway' => $this->gateway, 'amount' => $this->amount, 'plan_data' => $this->planData];
+            $payload = [
+                'transaction_id' => $this->transactionId,
+                'user_id'        => $this->userId,
+                'gateway'        => $this->gateway,
+                'amount'         => $this->amount,
+                'plan_data'      => $this->planData,
+            ];
             PaymentTransaction::query()->create(array_merge($payload, $data));
             exit();
         }
@@ -131,7 +137,7 @@ class PaymentDeal
             exit();
         }
 
-        $this->paymentRequestActivity(['type' => 'pre', 'request_payload' => $this->getPaymentResponse()['data']]);
+        $this->paymentRequestActivity(['request_payload' => $this->getPaymentResponse()['data']]);
     }
 
     private function stripePay()
@@ -145,7 +151,7 @@ class PaymentDeal
             exit();
         }
 
-        $this->paymentRequestActivity(['type' => 'pre', 'request_payload' => $this->getPaymentResponse()['data']]);
+        $this->paymentRequestActivity(['request_payload' => $this->getPaymentResponse()['data']]);
     }
 
     private function paypalOrderCheck()
@@ -159,7 +165,7 @@ class PaymentDeal
             exit();
         }
 
-        $this->paymentRequestActivity(['type' => 'post', 'response_payload' => $this->getPaymentResponse()['data']]);
+        $this->paymentRequestActivity(['status' => 'verify', 'response_payload' => $this->getPaymentResponse()['data']]);
     }
 
     private function stripeOrderCheck()
@@ -173,7 +179,7 @@ class PaymentDeal
             exit();
         }
 
-        $this->paymentRequestActivity(['type' => 'post', 'response_payload' => $this->getPaymentResponse()['data']]);
+        $this->paymentRequestActivity(['status' => 'verify', 'response_payload' => $this->getPaymentResponse()['data']]);
     }
 
     private function setPaymentResponse($data)

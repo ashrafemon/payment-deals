@@ -15,7 +15,6 @@ return new class extends Migration
     {
         Schema::create('payment_transactions', function (Blueprint $table) {
             $table->id();
-            $table->string('type')->nullable();
             $table->string('transaction_id')->nullable();
             $table->string('user_id')->nullable();
             $table->string('gateway')->nullable();
@@ -23,6 +22,7 @@ return new class extends Migration
             $table->json('plan_data')->nullable();
             $table->json('request_payload')->nullable();
             $table->json('response_payload')->nullable();
+            $table->json('validate_payload')->nullable();
             $table->string('status')->nullable()->default('request');
             $table->timestamps();
         });

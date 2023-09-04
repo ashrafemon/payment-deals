@@ -41,18 +41,18 @@ class PaypalService implements PaymentContract
                 ->post("{$this->baseUrl}/v1/oauth2/token", ['grant_type' => 'client_credentials']);
 
             if (!$client->ok()) {
-                return $this->responseGenerator(true, false, 'error', 400, 'Paypal configuration problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal configuration problem...', $client->json());
             }
 
             $client = $client->json();
 
             if (!array_key_exists('token_type', $client) || !array_key_exists('access_token', $client)) {
-                return $this->responseGenerator(true, false, 'error', 400, 'Paypal configuration problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal configuration problem...', $client->json());
             }
 
             $this->tokens = [$client['token_type'] . ' ', $client['access_token']];
 
-            return $this->responseGenerator(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
+            return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
         } catch (Exception $e) {
             return $e;
         }
@@ -86,17 +86,17 @@ class PaypalService implements PaymentContract
                 ]);
 
             if (!$client->ok()) {
-                return $this->responseGenerator(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
             }
 
             $client = $client->json();
             if (!array_key_exists('links', $client)) {
-                return $this->responseGenerator(true, false, 'error', 400, 'Something went wrong in paypal transactions', $client);
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Something went wrong in paypal transactions', $client);
             }
 
             $payload = ['response' => $client, 'url' => $client['links'][1]['href']];
 
-            return $this->responseGenerator(false, true, 'success', 201, 'Paypal request added successfully...', $payload);
+            return $this->leafwrapResponse(false, true, 'success', 201, 'Paypal request added successfully...', $payload);
         } catch (Exception $e) {
             return $e;
         }
@@ -114,10 +114,10 @@ class PaypalService implements PaymentContract
             $client = Http::withHeaders($headers)->get("{$this->baseUrl}/v2/checkout/orders/{$orderId}");
 
             if (!$client->ok()) {
-                return $this->responseGenerator(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
             }
 
-            return $this->responseGenerator(false, true, 'success', 200, 'Paypal order validated successfully...', $client->json());
+            return $this->leafwrapResponse(false, true, 'success', 200, 'Paypal order validated successfully...', $client->json());
         } catch (Exception $e) {
             return $e;
         }

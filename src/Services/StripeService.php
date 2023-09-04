@@ -21,7 +21,7 @@ class StripeService implements PaymentContract
     {
         try {
             $this->tokens = ['Bearer ', $this->secretKey];
-            return $this->responseGenerator(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
+            return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
         } catch (Exception $e) {
             return $e;
         }
@@ -45,17 +45,17 @@ class StripeService implements PaymentContract
                 ]);
 
             if (!$client->ok()) {
-                return $this->responseGenerator(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
             }
 
             $client = $client->json();
             if (!array_key_exists('url', $client)) {
-                return $this->responseGenerator(true, false, 'error', 400, 'Something went wrong in stripe transactions', $client);
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Something went wrong in stripe transactions', $client);
             }
 
             $payload = ['response' => $client, 'url' => $client['url']];
 
-            return $this->responseGenerator(false, true, 'success', 201, 'Stripe request added successfully...', $payload);
+            return $this->leafwrapResponse(false, true, 'success', 201, 'Stripe request added successfully...', $payload);
         } catch (Exception $e) {
             return $e;
         }
@@ -70,10 +70,10 @@ class StripeService implements PaymentContract
                 ->get("https://api.stripe.com/v1/checkout/sessions/{$orderId}");
 
             if (!$client->ok()) {
-                return $this->responseGenerator(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
             }
 
-            return $this->responseGenerator(false, true, 'success', 201, 'Stripe order validated successfully...', $client->json());
+            return $this->leafwrapResponse(false, true, 'success', 201, 'Stripe order validated successfully...', $client->json());
         } catch (Exception $e) {
             return $e;
         }

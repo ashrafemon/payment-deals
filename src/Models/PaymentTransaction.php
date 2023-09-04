@@ -10,7 +10,6 @@ class PaymentTransaction extends Model
     use HasFactory;
 
     protected $fillable = [
-        'type',
         'transaction_id',
         'user_id',
         'gateway',
@@ -18,7 +17,7 @@ class PaymentTransaction extends Model
         'plan_data',
         'request_payload',
         'response_payload',
-        // 'validate_payload',
+        'validate_payload',
         'status',
     ];
 
@@ -26,6 +25,6 @@ class PaymentTransaction extends Model
         'plan_data'        => 'array',
         'request_payload'  => 'array',
         'response_payload' => 'array',
-        // 'validate_payload' => 'array',
+        'validate_payload' => 'array',
     ];
 }
