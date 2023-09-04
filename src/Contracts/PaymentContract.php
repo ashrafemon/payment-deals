@@ -1,6 +1,6 @@
 <?php
 
-namespace Leafwrap\PaymentDeals\Services\Payments;
+namespace Leafwrap\PaymentDeals;
 
 interface PaymentContract
 {
