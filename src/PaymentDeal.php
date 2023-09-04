@@ -2,10 +2,10 @@
 
 namespace Leafwrap\PaymentDeals;
 
-use App\Services\Payments\PaypalService;
-use App\Services\Payments\StripeService;
 use Leafwrap\PaymentDeals\Models\PaymentGateway;
 use Leafwrap\PaymentDeals\Models\PaymentTransaction;
+use Leafwrap\PaymentDeals\Services\Payments\PaypalService;
+use Leafwrap\PaymentDeals\Services\Payments\StripeService;
 use Leafwrap\PaymentDeals\Traits\Helper;
 
 class PaymentDeal
@@ -20,23 +20,24 @@ class PaymentDeal
     private array $planData;
 
     private mixed $paymentGateway;
+    private bool $exit = false;
     private array $response;
     private array $redirectUrls = [
         'success' => '',
-        'cancel' => ''
+        'cancel'  => '',
     ];
 
     public function initialize($planData, $amount, $userId, $gateway)
     {
-        $this->planData  = $planData;
-        $this->amount  = $amount;
-        $this->userId  = $userId;
-        $this->gateway = $gateway;
+        $this->planData      = $planData;
+        $this->amount        = $amount;
+        $this->userId        = $userId;
+        $this->gateway       = $gateway;
         $this->transactionId = strtoupper(uniqid('TRANS-'));
 
         $this->setPaymentResponse($this->checkGatewayCredentials());
         if ($this->getPaymentResponse()['isError']) {
-            return $this->getPaymentResponse();
+            exit();
         }
 
         $this->setRedirectionUrls();
@@ -55,7 +56,7 @@ class PaymentDeal
     {
         if (!$exist = PaymentTransaction::query()->where(['type' => 'pre', 'transaction_id' => $transactionId])->first()) {
             $this->setPaymentResponse(true, false, 'error', 404, 'Payment transaction not found');
-            return $this->getPaymentResponse();
+            return;
         }
 
         $this->transactionId = $exist->transaction_id;
@@ -81,7 +82,7 @@ class PaymentDeal
             );
 
             $this->setPaymentResponse($service->tokenBuilder());
-            if ($this->response['isError']) {
+            if ($this->getPaymentResponse()['isError']) {
                 return $this->getPaymentResponse();
             }
 
@@ -92,10 +93,10 @@ class PaymentDeal
 
             $this->paymentRequestActivity(['type' => 'post', 'response_payload' => $this->getPaymentResponse()['data']]);
         } elseif ($this->gateway === 'stripe' && $this->orderId) {
-            $service = new StripeService($this->paymentGateway->credentials['secret_key'] ?? '',);
+            $service = new StripeService($this->paymentGateway->credentials['secret_key'] ?? '', );
 
             $this->setPaymentResponse($service->tokenBuilder());
-            if ($this->response['isError']) {
+            if ($this->getPaymentResponse()['isError']) {
                 return $this->getPaymentResponse();
             }
 
@@ -106,6 +107,11 @@ class PaymentDeal
 
             $this->paymentRequestActivity(['type' => 'post', 'response_payload' => $this->getPaymentResponse()['data']]);
         }
+    }
+
+    public function getPaymentResponse()
+    {
+        return $this->response;
     }
 
     private function checkGatewayCredentials()
@@ -131,6 +137,57 @@ class PaymentDeal
 
     private function paypalPay()
     {
+        // $service = new PaypalService(
+        //     $this->paymentGateway->credentials['app_key'] ?? '',
+        //     $this->paymentGateway->credentials['secret_key'] ?? '',
+        //     $this->paymentGateway->credentials['sandbox'] ?? true
+        // );
+
+        // $this->setPaymentResponse($service->tokenBuilder());
+        // if ($this->getPaymentResponse()['isError']) {
+        //     exit();
+        // }
+
+        if (!$service = $this->paypalInit()) {
+            exit();
+        }
+
+        $this->setPaymentResponse($service->paymentRequest(['currency' => 'usd', 'amount' => $this->amount], $this->redirectUrls));
+        if ($this->getPaymentResponse()['isError']) {
+            exit();
+        }
+
+        $this->paymentRequestActivity(['type' => 'pre', 'request_payload' => $this->getPaymentResponse()['data']]);
+    }
+
+    private function stripePay()
+    {
+        // $service = new StripeService($this->paymentGateway->credentials['secret_key'] ?? '');
+
+        // $this->setPaymentResponse($service->tokenBuilder());
+        // if ($this->getPaymentResponse()['isError']) {
+        //     return $this->getPaymentResponse();
+        // }
+
+        if (!$service = $this->stripeInit()) {
+            exit();
+        }
+
+        $this->setPaymentResponse($service->paymentRequest(['currency' => 'usd', 'amount' => $this->amount], $this->redirectUrls));
+        if ($this->getPaymentResponse()['isError']) {
+            exit();
+        }
+
+        $this->paymentRequestActivity(['type' => 'pre', 'request_payload' => $this->getPaymentResponse()['data']]);
+    }
+
+    private function setPaymentResponse($data)
+    {
+        $this->response = $data;
+    }
+
+    private function paypalInit()
+    {
         $service = new PaypalService(
             $this->paymentGateway->credentials['app_key'] ?? '',
             $this->paymentGateway->credentials['secret_key'] ?? '',
@@ -139,71 +196,23 @@ class PaymentDeal
 
         $this->setPaymentResponse($service->tokenBuilder());
         if ($this->getPaymentResponse()['isError']) {
-            return $this->getPaymentResponse();
+            exit();
         }
 
-        $this->setPaymentResponse($service->paymentRequest(['currency' => 'usd', 'amount' => $this->amount], $this->redirectUrls));
-        if ($this->getPaymentResponse()['isError']) {
-            return $this->getPaymentResponse();
-        }
-
-        $this->paymentRequestActivity(['type' => 'pre', 'request_payload' => $this->getPaymentResponse()['data']]);
+        return $service;
     }
 
-    private function stripePay()
+    private function stripeInit()
     {
         $service = new StripeService($this->paymentGateway->credentials['secret_key'] ?? '');
 
         $this->setPaymentResponse($service->tokenBuilder());
         if ($this->getPaymentResponse()['isError']) {
-            return $this->getPaymentResponse();
+            exit();
         }
 
-        $this->setPaymentResponse($service->paymentRequest(['currency' => 'usd', 'amount' => $this->amount], $this->redirectUrls));
-        if ($this->getPaymentResponse()['isError']) {
-            return $this->getPaymentResponse();
-        }
-
-        $this->paymentRequestActivity(['type' => 'pre', 'request_payload' => $this->getPaymentResponse()['data']]);
+        return $service;
     }
-
-    public function getPaymentResponse()
-    {
-        return $this->response;
-    }
-
-    private function setPaymentResponse($data)
-    {
-        $this->response = $data;
-    }
-
-    // private function paypalInit()
-    // {
-    //     $service = new PaypalService(
-    //         $this->paymentGateway->credentials['app_key'] ?? '',
-    //         $this->paymentGateway->credentials['secret_key'] ?? '',
-    //         $this->paymentGateway->credentials['sandbox'] ?? true
-    //     );
-
-    //     $this->setPaymentResponse($service->tokenBuilder());
-    //     if ($this->getPaymentResponse()['isError']) {
-    //         return $this->getPaymentResponse();
-    //     }
-
-    //     return $service;
-    // }
-
-    // private function stripeInit()
-    // {
-    //     $service = new StripeService($this->paymentGateway->credentials['secret_key'] ?? '');
-
-    //     $this->setPaymentResponse($service->tokenBuilder());
-    //     if ($this->getPaymentResponse()['isError']) {
-    //         return $this->getPaymentResponse();
-    //     }
-
-    //     return $service;
-    // }
 
     // private function assignPlan()
     // {

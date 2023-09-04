@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Payments;
+namespace Leafwrap\PaymentDeals\Services\Payments;
 
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -29,7 +29,7 @@ class StripeService implements PaymentContract
     public function paymentRequest($data, $urls)
     {
         try {
-            $headers = ['Authorization' => $this->tokens[0] . $this->tokens[1], 'Content-Type'  => 'application/x-www-form-urlencoded'];
+            $headers = ['Authorization' => $this->tokens[0] . $this->tokens[1], 'Content-Type' => 'application/x-www-form-urlencoded'];
 
             $client = Http::withHeaders($headers)
                 ->asForm()

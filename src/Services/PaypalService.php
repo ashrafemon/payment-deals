@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Payments;
+namespace Leafwrap\PaymentDeals\Services\Payments;
 
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -154,7 +154,7 @@ class PaypalService implements PaymentContract
 
     private function requestIdBuilder()
     {
-        $value           = cache()->remember('pos_paypal_id', now()->addHours(3), fn () => uniqid('POS_PAYPAL_ID-'));
+        $value           = cache()->remember('pos_paypal_id', now()->addHours(3), fn() => uniqid('POS_PAYPAL_ID-'));
         $this->requestId = $value;
     }
 }
