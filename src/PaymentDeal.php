@@ -85,7 +85,7 @@ class PaymentDeal
             exit();
         }
 
-        $this->setPaymentResponse(false, true, 'success', 200, 'Transaction validated successfully');
+        $this->setPaymentResponse($this->responseGenerator(false, true, 'success', 200, 'Transaction validated successfully', null));
     }
 
     public function getPaymentResponse()
