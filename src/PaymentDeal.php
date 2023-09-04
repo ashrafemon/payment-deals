@@ -66,14 +66,14 @@ class PaymentDeal
     private function transactionCheck($transactionId)
     {
         if (!$exist = PaymentTransaction::query()->where(['type' => 'pre', 'transaction_id' => $transactionId])->first()) {
-            $this->setPaymentResponse(true, false, 'error', 404, 'Payment transaction not found');
+            $this->setPaymentResponse($this->responseGenerator(true, false, 'error', 404, 'Payment transaction not found', null));
             exit();
         }
 
         $this->transactionId = $exist->transaction_id;
 
         if (!in_array($exist->gateway, ['paypal', 'stripe', 'razor_pay', 'bkash'])) {
-            $this->setPaymentResponse(true, false, 'error', 404, 'Payment transaction invalid gateway');
+            $this->setPaymentResponse($this->responseGenerator(true, false, 'error', 404, 'Payment transaction invalid gateway', null));
             exit();
         }
 
