@@ -4,7 +4,7 @@ namespace Leafwrap\PaymentDeals\Services;
 
 use Exception;
 use Illuminate\Support\Facades\Http;
-use Leafwrap\PaymentDeals\PaymentContract;
+use Leafwrap\PaymentDeals\Contracts\PaymentContract;
 use Leafwrap\PaymentDeals\Traits\Helper;
 
 class StripeService implements PaymentContract
