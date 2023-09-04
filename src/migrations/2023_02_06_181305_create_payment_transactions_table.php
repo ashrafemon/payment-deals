@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('type')->nullable();
             $table->string('transaction_id')->nullable();
+            $table->string('user_id')->nullable();
             $table->string('gateway')->nullable();
             $table->float('amount')->nullable()->default(0);
             $table->json('plan_data')->nullable();

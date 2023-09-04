@@ -112,8 +112,12 @@ class PaymentDeal
 
     private function paymentRequestActivity($data)
     {
-        $payload = ['transaction_id' => $this->transactionId, 'gateway' => $this->gateway, 'amount' => $this->amount, 'plan_data' => $this->planData];
-        PaymentTransaction::query()->create(array_merge($payload, $data));
+        if (!$exist = PaymentTransaction::query()->where(['transaction_id' => $this->transactionId])->first()) {
+            $payload = ['transaction_id' => $this->transactionId, 'user_id' => $this->userId, 'gateway' => $this->gateway, 'amount' => $this->amount, 'plan_data' => $this->planData];
+            PaymentTransaction::query()->create(array_merge($payload, $data));
+            exit();
+        }
+        $exist->update($data);
     }
 
     private function paypalPay()

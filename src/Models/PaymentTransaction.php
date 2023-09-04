@@ -12,19 +12,20 @@ class PaymentTransaction extends Model
     protected $fillable = [
         'type',
         'transaction_id',
+        'user_id',
         'gateway',
         'amount',
         'plan_data',
         'request_payload',
         'response_payload',
-        'validate_payload',
+        // 'validate_payload',
         'status',
     ];
 
     protected $casts = [
-        'plan_data' => 'array',
-        'request_payload' => 'array',
+        'plan_data'        => 'array',
+        'request_payload'  => 'array',
         'response_payload' => 'array',
-        'validate_payload' => 'array',
+        // 'validate_payload' => 'array',
     ];
 }
