@@ -73,7 +73,7 @@ class StripeService implements PaymentContract
                 return $this->responseGenerator(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
             }
 
-            return $client->json();
+            return $this->responseGenerator(false, true, 'success', 201, 'Stripe order validated successfully...', $client->json());
         } catch (Exception $e) {
             return $e;
         }

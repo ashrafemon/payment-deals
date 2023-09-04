@@ -117,7 +117,7 @@ class PaypalService implements PaymentContract
                 return $this->responseGenerator(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
             }
 
-            return $client->json();
+            return $this->responseGenerator(false, true, 'success', 200, 'Paypal order validated successfully...', $client->json());
         } catch (Exception $e) {
             return $e;
         }

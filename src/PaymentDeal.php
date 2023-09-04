@@ -54,59 +54,38 @@ class PaymentDeal
 
     public function verify($transactionId)
     {
+        $this->transactionCheck($transactionId);
+
+        if ($this->gateway === 'paypal' && $this->orderId) {
+            $this->paypalOrderCheck();
+        } elseif ($this->gateway === 'stripe' && $this->orderId) {
+            $this->stripeOrderCheck();
+        }
+    }
+
+    private function transactionCheck($transactionId)
+    {
         if (!$exist = PaymentTransaction::query()->where(['type' => 'pre', 'transaction_id' => $transactionId])->first()) {
             $this->setPaymentResponse(true, false, 'error', 404, 'Payment transaction not found');
-            return;
+            exit();
         }
 
         $this->transactionId = $exist->transaction_id;
 
         if (!in_array($exist->gateway, ['paypal', 'stripe', 'razor_pay', 'bkash'])) {
             $this->setPaymentResponse(true, false, 'error', 404, 'Payment transaction invalid gateway');
-            return $this->getPaymentResponse();
+            exit();
+        }
+
+        $this->setPaymentResponse($this->checkGatewayCredentials());
+        if ($this->getPaymentResponse()['isError']) {
+            exit();
         }
 
         $this->gateway = $exist->gateway;
         $this->orderId = $exist->request_payload['response']['id'] ?? '';
 
-        $this->setPaymentResponse($this->checkGatewayCredentials());
-        if ($this->getPaymentResponse()['isError']) {
-            return $this->getPaymentResponse();
-        }
-
-        if ($this->gateway === 'paypal' && $this->orderId) {
-            $service = new PaypalService(
-                $this->paymentGateway->credentials['app_key'] ?? '',
-                $this->paymentGateway->credentials['secret_key'] ?? '',
-                $this->paymentGateway->credentials['sandbox'] ?? true
-            );
-
-            $this->setPaymentResponse($service->tokenBuilder());
-            if ($this->getPaymentResponse()['isError']) {
-                return $this->getPaymentResponse();
-            }
-
-            $this->setPaymentResponse($service->paymentValidate($this->orderId));
-            if ($this->getPaymentResponse()['isError']) {
-                return $this->getPaymentResponse();
-            }
-
-            $this->paymentRequestActivity(['type' => 'post', 'response_payload' => $this->getPaymentResponse()['data']]);
-        } elseif ($this->gateway === 'stripe' && $this->orderId) {
-            $service = new StripeService($this->paymentGateway->credentials['secret_key'] ?? '', );
-
-            $this->setPaymentResponse($service->tokenBuilder());
-            if ($this->getPaymentResponse()['isError']) {
-                return $this->getPaymentResponse();
-            }
-
-            $this->setPaymentResponse($service->paymentValidate($this->orderId));
-            if ($this->getPaymentResponse()['isError']) {
-                return $this->getPaymentResponse();
-            }
-
-            $this->paymentRequestActivity(['type' => 'post', 'response_payload' => $this->getPaymentResponse()['data']]);
-        }
+        $this->setPaymentResponse(false, true, 'success', 200, 'Transaction validated successfully');
     }
 
     public function getPaymentResponse()
@@ -139,17 +118,6 @@ class PaymentDeal
 
     private function paypalPay()
     {
-        // $service = new PaypalService(
-        //     $this->paymentGateway->credentials['app_key'] ?? '',
-        //     $this->paymentGateway->credentials['secret_key'] ?? '',
-        //     $this->paymentGateway->credentials['sandbox'] ?? true
-        // );
-
-        // $this->setPaymentResponse($service->tokenBuilder());
-        // if ($this->getPaymentResponse()['isError']) {
-        //     exit();
-        // }
-
         if (!$service = $this->paypalInit()) {
             exit();
         }
@@ -164,13 +132,6 @@ class PaymentDeal
 
     private function stripePay()
     {
-        // $service = new StripeService($this->paymentGateway->credentials['secret_key'] ?? '');
-
-        // $this->setPaymentResponse($service->tokenBuilder());
-        // if ($this->getPaymentResponse()['isError']) {
-        //     return $this->getPaymentResponse();
-        // }
-
         if (!$service = $this->stripeInit()) {
             exit();
         }
@@ -181,6 +142,34 @@ class PaymentDeal
         }
 
         $this->paymentRequestActivity(['type' => 'pre', 'request_payload' => $this->getPaymentResponse()['data']]);
+    }
+
+    private function paypalOrderCheck()
+    {
+        if (!$service = $this->paypalInit()) {
+            exit();
+        }
+
+        $this->setPaymentResponse($service->paymentValidate($this->orderId));
+        if ($this->getPaymentResponse()['isError']) {
+            exit();
+        }
+
+        $this->paymentRequestActivity(['type' => 'post', 'response_payload' => $this->getPaymentResponse()['data']]);
+    }
+
+    private function stripeOrderCheck()
+    {
+        if (!$service = $this->stripeInit()) {
+            exit();
+        }
+
+        $this->setPaymentResponse($service->paymentValidate($this->orderId));
+        if ($this->getPaymentResponse()['isError']) {
+            exit();
+        }
+
+        $this->paymentRequestActivity(['type' => 'post', 'response_payload' => $this->getPaymentResponse()['data']]);
     }
 
     private function setPaymentResponse($data)
@@ -215,44 +204,4 @@ class PaymentDeal
 
         return $service;
     }
-
-    // private function assignPlan()
-    // {
-    //     if (!$preTrans = PrePaymentTransaction::query()->where(['transaction_id' => $this->transactionId, 'status' => 'request'])->first()) {
-    //         $this->response = ['message' => 'No payment transaction found', 'status' => 'error', 'statusCode' => 404];
-    //         return;
-    //     }
-
-    //     if (!in_array($this->paymentResponse['status'], ['complete', 'COMPLETED', 'APPROVED'])) {
-    //         $preTrans->update(['status' => 'cancel']);
-    //         $this->response = ['message' => 'Payment transaction cancelled', 'status' => 'error', 'statusCode' => 400];
-    //         return;
-    //     }
-    //     $preTrans->update(['status' => 'confirm']);
-
-    //     if (AssignPricingPlan::query()->where(['transaction_id' => $this->transactionId])->exists()) {
-    //         $this->response = ['message' => 'This transaction already done', 'status' => 'error', 'statusCode' => 400];
-    //         return;
-    //     }
-
-    //     $payload = [
-    //         'store_id'        => $preTrans->store_id,
-    //         'pricing_plan'    => $preTrans->pricing_plan,
-    //         'assign_fee'      => $preTrans->amount,
-    //         'transaction_id'  => $this->transactionId,
-    //         'assign_method'   => 'online',
-    //         'assign_date'     => now(),
-    //         'accessible_date' => now()->addDay(),
-    //     ];
-
-    //     $payload['accessible_date'] = match ($preTrans->pricing_plan['accessible_type']) {
-    //         'day' => now()->addDays($preTrans->pricing_plan['accessible']),
-    //         'week' => now()->addWeeks($preTrans->pricing_plan['accessible']),
-    //         'month' => now()->addMonths($preTrans->pricing_plan['accessible']),
-    //         'year' => now()->addYears($preTrans->pricing_plan['accessible']),
-    //     };
-
-    //     AssignPricingPlan::query()->create($payload);
-    //     $this->response = ['message' => 'Your payment has completed, Now login to your store.', 'status' => 'success', 'statusCode' => 201];
-    // }
 }
