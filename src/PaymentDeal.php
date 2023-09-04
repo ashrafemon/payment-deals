@@ -4,8 +4,8 @@ namespace Leafwrap\PaymentDeals;
 
 use Leafwrap\PaymentDeals\Models\PaymentGateway;
 use Leafwrap\PaymentDeals\Models\PaymentTransaction;
-use Leafwrap\PaymentDeals\Services\Payments\PaypalService;
-use Leafwrap\PaymentDeals\Services\Payments\StripeService;
+use Leafwrap\PaymentDeals\Services\PaypalService;
+use Leafwrap\PaymentDeals\Services\StripeService;
 use Leafwrap\PaymentDeals\Traits\Helper;
 
 class PaymentDeal
