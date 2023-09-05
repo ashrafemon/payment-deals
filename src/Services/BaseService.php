@@ -37,7 +37,7 @@ class BaseService
 
     protected function checkGatewayCredentials()
     {
-        if (!$this->paymentGateway = PaymentGateway::query()->where(['type' => $this->gateway])->first()) {
+        if (!BaseService::$paymentGateway = PaymentGateway::query()->where(['type' => BaseService::$gateway])->first()) {
             return $this->leafwrapResponse(true, false, 'error', 404, 'Payment gateway not found');
         }
 
@@ -46,21 +46,21 @@ class BaseService
 
     protected function setRedirectionUrls()
     {
-        $this->redirectUrls = [
-            'success' => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$this->gateway}&transaction_id={$this->transactionId}&status=success",
-            'cancel'  => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$this->gateway}&transaction_id={$this->transactionId}&status=cancel",
+        BaseService::$redirectUrls = [
+            'success' => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={BaseService::$gateway}&transaction_id={BaseService::$transactionId}&status=success",
+            'cancel'  => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={BaseService::$gateway}&transaction_id={BaseService::$transactionId}&status=cancel",
         ];
     }
 
     protected function paymentActivity($data)
     {
-        if (!$exist = PaymentTransaction::query()->where(['transaction_id' => $this->transactionId])->first()) {
+        if (!$exist = PaymentTransaction::query()->where(['transaction_id' => BaseService::$transactionId])->first()) {
             $payload = [
-                'transaction_id' => $this->transactionId,
-                'user_id'        => $this->userId,
-                'gateway'        => $this->gateway,
-                'amount'         => $this->amount,
-                'plan_data'      => $this->planData,
+                'transaction_id' => BaseService::$transactionId,
+                'user_id'        => BaseService::$userId,
+                'gateway'        => BaseService::$gateway,
+                'amount'         => BaseService::$amount,
+                'plan_data'      => BaseService::$planData,
             ];
             PaymentTransaction::query()->create(array_merge($payload, $data));
             return;
@@ -75,15 +75,15 @@ class BaseService
             return;
         }
 
-        $this->transactionId = $exist->transaction_id;
+        BaseService::$transactionId = $exist->transaction_id;
 
         if (!in_array($exist->gateway, ['paypal', 'stripe', 'razor_pay', 'bkash'])) {
             $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction invalid gateway'));
             return;
         }
 
-        $this->gateway = $exist->gateway;
-        $this->orderId = $exist->request_payload['response']['id'] ?? '';
+        BaseService::$gateway = $exist->gateway;
+        BaseService::$orderId = $exist->request_payload['response']['id'] ?? '';
 
         $this->setPaymentResponse($this->checkGatewayCredentials());
         if ($this->getPaymentResponse()['isError']) {

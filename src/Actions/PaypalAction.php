@@ -10,9 +10,9 @@ class PaypalAction extends BaseService
     private function init()
     {
         $service = new PaypalService(
-            $this->paymentGateway->credentials['app_key'] ?? '',
-            $this->paymentGateway->credentials['secret_key'] ?? '',
-            $this->paymentGateway->credentials['sandbox'] ?? true
+            BaseService::$paymentGateway->credentials['app_key'] ?? '',
+            BaseService::$paymentGateway->credentials['secret_key'] ?? '',
+            BaseService::$paymentGateway->credentials['sandbox'] ?? true
         );
 
         $this->setPaymentResponse($service->tokenBuilder());
@@ -29,7 +29,7 @@ class PaypalAction extends BaseService
             return;
         }
 
-        $this->setPaymentResponse($service->paymentRequest(['currency' => $this->currency, 'amount' => $this->amount], $this->redirectUrls));
+        $this->setPaymentResponse($service->paymentRequest(['currency' => BaseService::$currency, 'amount' => BaseService::$amount], BaseService::$redirectUrls));
         if ($this->getPaymentResponse()['isError']) {
             return;
         }
@@ -43,7 +43,7 @@ class PaypalAction extends BaseService
             return;
         }
 
-        $this->setPaymentResponse($service->paymentValidate($this->orderId));
+        $this->setPaymentResponse($service->paymentValidate(BaseService::$orderId));
         if ($this->getPaymentResponse()['isError']) {
             return;
         }

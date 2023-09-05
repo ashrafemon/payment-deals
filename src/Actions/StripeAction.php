@@ -9,7 +9,7 @@ class StripeAction extends BaseService
 {
     private function init()
     {
-        $service = new StripeService($this->paymentGateway->credentials['secret_key'] ?? '');
+        $service = new StripeService(BaseService::$paymentGateway->credentials['secret_key'] ?? '');
 
         $this->setPaymentResponse($service->tokenBuilder());
         if ($this->getPaymentResponse()['isError']) {
@@ -25,7 +25,7 @@ class StripeAction extends BaseService
             return;
         }
 
-        $this->setPaymentResponse($service->paymentRequest(['currency' => $this->currency, 'amount' => $this->amount], $this->redirectUrls));
+        $this->setPaymentResponse($service->paymentRequest(['currency' => BaseService::$currency, 'amount' => BaseService::$amount], BaseService::$redirectUrls));
         if ($this->getPaymentResponse()['isError']) {
             return;
         }
@@ -39,7 +39,7 @@ class StripeAction extends BaseService
             return;
         }
 
-        $this->setPaymentResponse($service->paymentValidate($this->orderId));
+        $this->setPaymentResponse($service->paymentValidate(BaseService::$orderId));
         if ($this->getPaymentResponse()['isError']) {
             return;
         }

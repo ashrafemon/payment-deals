@@ -10,12 +10,12 @@ class PaymentDeal extends BaseService
 {
     public function initialize($planData, $amount, $userId, $gateway, $currency = 'usd')
     {
-        $this->planData      = $planData;
-        $this->currency      = $currency;
-        $this->amount        = $amount;
-        $this->userId        = $userId;
-        $this->gateway       = $gateway;
-        $this->transactionId = strtolower(uniqid('trans-'));
+        BaseService::$planData      = $planData;
+        BaseService::$currency      = $currency;
+        BaseService::$amount        = $amount;
+        BaseService::$userId        = $userId;
+        BaseService::$gateway       = $gateway;
+        BaseService::$transactionId = strtolower(uniqid('trans-'));
 
         $this->setPaymentResponse($this->checkGatewayCredentials());
         if ($this->getPaymentResponse()['isError']) {
@@ -27,7 +27,7 @@ class PaymentDeal extends BaseService
 
     public function checkout()
     {
-        match ($this->gateway) {
+        match (BaseService::$gateway) {
             'paypal' => (new PaypalAction)->pay(),
             'stripe' => (new StripeAction)->pay(),
             default => $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
@@ -42,12 +42,12 @@ class PaymentDeal extends BaseService
             return;
         }
 
-        if (!$this->gateway || !$this->orderId) {
+        if (!BaseService::$gateway || !BaseService::$orderId) {
             $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid gateway & order id'));
             return;
         }
 
-        match ($this->gateway) {
+        match (BaseService::$gateway) {
             'paypal' => (new PaypalAction)->orderCheck(),
             'stripe' => (new StripeAction)->orderCheck(),
             default => $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
