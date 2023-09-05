@@ -115,7 +115,7 @@ class PaypalService implements PaymentContract
                 'Authorization'     => $this->tokens[0] . $this->tokens[1],
             ];
 
-            $client = Http::withHeaders($headers)->post("{$this->baseUrl}/v2/checkout/orders/{$orderId}/authorize");
+            $client = Http::withHeaders($headers)->post("{$this->baseUrl}/v2/checkout/orders/{$orderId}/capture");
 
             if (!$client->ok()) {
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
