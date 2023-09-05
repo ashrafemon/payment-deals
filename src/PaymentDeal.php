@@ -37,7 +37,7 @@ class PaymentDeal
 
         $this->setPaymentResponse($this->checkGatewayCredentials());
         if ($this->getPaymentResponse()['isError']) {
-            exit();
+            return;
         }
 
         $this->setRedirectionUrls();
@@ -67,14 +67,14 @@ class PaymentDeal
     {
         if (!$exist = PaymentTransaction::query()->where(['transaction_id' => $transactionId, 'status' => 'request'])->first()) {
             $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction not found'));
-            exit();
+            return;
         }
 
         $this->transactionId = $exist->transaction_id;
 
         if (!in_array($exist->gateway, ['paypal', 'stripe', 'razor_pay', 'bkash'])) {
             $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction invalid gateway'));
-            exit();
+            return;
         }
 
         $this->gateway = $exist->gateway;
@@ -82,7 +82,7 @@ class PaymentDeal
 
         $this->setPaymentResponse($this->checkGatewayCredentials());
         if ($this->getPaymentResponse()['isError']) {
-            exit();
+            return;
         }
 
         $this->setPaymentResponse($this->leafwrapResponse(false, true, 'success', 200, 'Transaction validated successfully'));
@@ -121,7 +121,7 @@ class PaymentDeal
                 'plan_data'      => $this->planData,
             ];
             PaymentTransaction::query()->create(array_merge($payload, $data));
-            exit();
+            return;
         }
         $exist->update($data);
     }
@@ -129,12 +129,12 @@ class PaymentDeal
     private function paypalPay()
     {
         if (!$service = $this->paypalInit()) {
-            exit();
+            return;
         }
 
         $this->setPaymentResponse($service->paymentRequest(['currency' => 'usd', 'amount' => $this->amount], $this->redirectUrls));
         if ($this->getPaymentResponse()['isError']) {
-            exit();
+            return;
         }
 
         $this->paymentRequestActivity(['request_payload' => $this->getPaymentResponse()['data']]);
@@ -143,12 +143,12 @@ class PaymentDeal
     private function stripePay()
     {
         if (!$service = $this->stripeInit()) {
-            exit();
+            return;
         }
 
         $this->setPaymentResponse($service->paymentRequest(['currency' => 'usd', 'amount' => $this->amount], $this->redirectUrls));
         if ($this->getPaymentResponse()['isError']) {
-            exit();
+            return;
         }
 
         $this->paymentRequestActivity(['request_payload' => $this->getPaymentResponse()['data']]);
@@ -157,12 +157,12 @@ class PaymentDeal
     private function paypalOrderCheck()
     {
         if (!$service = $this->paypalInit()) {
-            exit();
+            return;
         }
 
         $this->setPaymentResponse($service->paymentValidate($this->orderId));
         if ($this->getPaymentResponse()['isError']) {
-            exit();
+            return;
         }
 
         $this->paymentRequestActivity(['status' => 'verify', 'response_payload' => $this->getPaymentResponse()['data']]);
@@ -171,12 +171,12 @@ class PaymentDeal
     private function stripeOrderCheck()
     {
         if (!$service = $this->stripeInit()) {
-            exit();
+            return;
         }
 
         $this->setPaymentResponse($service->paymentValidate($this->orderId));
         if ($this->getPaymentResponse()['isError']) {
-            exit();
+            return;
         }
 
         $this->paymentRequestActivity(['status' => 'verify', 'response_payload' => $this->getPaymentResponse()['data']]);
@@ -197,7 +197,7 @@ class PaymentDeal
 
         $this->setPaymentResponse($service->tokenBuilder());
         if ($this->getPaymentResponse()['isError']) {
-            exit();
+            return;
         }
 
         return $service;
@@ -209,7 +209,7 @@ class PaymentDeal
 
         $this->setPaymentResponse($service->tokenBuilder());
         if ($this->getPaymentResponse()['isError']) {
-            exit();
+            return;
         }
 
         return $service;

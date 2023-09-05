@@ -4,7 +4,7 @@ namespace Leafwrap\PaymentDeals\Traits;
 
 trait Helper
 {
-    public function leafwrapResponse($isError = false, $isSuccess = true, $status = 'success', $statusCode = 200, $message, $data = null)
+    public function leafwrapResponse($isError = false, $isSuccess = true, $status = 'success', $statusCode = 200, $message = null, $data = null)
     {
         return [
             'isError'    => $isError,
