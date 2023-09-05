@@ -11,6 +11,7 @@ class PaymentGateway extends Model
 
     protected $fillable = [
         'type',
+        'gateway',
         'credentials',
         'additional',
         'status',
@@ -18,6 +19,6 @@ class PaymentGateway extends Model
 
     protected $casts = [
         'credentials' => 'array',
-        'additional' => 'array',
+        'additional'  => 'array',
     ];
 }

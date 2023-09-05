@@ -36,7 +36,7 @@ class BaseService
 
     protected function checkGatewayCredentials()
     {
-        if (!BaseService::$paymentGateway = PaymentGateway::query()->where(['type' => BaseService::$gateway])->first()) {
+        if (!BaseService::$paymentGateway = PaymentGateway::query()->where(['type' => 'online', 'gateway' => BaseService::$gateway])->first()) {
             return $this->leafwrapResponse(true, false, 'error', 404, 'Payment gateway not found');
         }
 

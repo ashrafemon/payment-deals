@@ -15,7 +15,8 @@ return new class extends Migration
     {
         Schema::create('payment_gateways', function (Blueprint $table) {
             $table->id();
-            $table->string('type')->nullable();
+            $table->string('type')->nullable()->default('online');
+            $table->string('gateway')->nullable();
             $table->json('credentials')->nullable();
             $table->json('additional')->nullable();
             $table->boolean('status')->nullable()->default(0);
