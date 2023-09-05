@@ -115,7 +115,7 @@ class PaypalService implements PaymentContract
                 'Authorization'     => $this->tokens[0] . $this->tokens[1],
             ];
 
-            $client = Http::withHeaders($headers)->get("{$this->baseUrl}/v2/checkout/orders/{$orderId}");
+            $client = Http::withHeaders($headers)->post("{$this->baseUrl}/v2/checkout/orders/{$orderId}/authorize");
 
             if (!$client->ok()) {
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
@@ -126,36 +126,6 @@ class PaypalService implements PaymentContract
             return $e;
         }
     }
-
-    // private function paymentConfirm($data, $orderId)
-    // {
-    //     try {
-    //         $headers = [
-    //             'PayPal-Request-Id' => $this->requestId,
-    //             'Content-Type'      => 'application/json',
-    //             'Authorization'     => $this->tokens[0] . $this->tokens[1],
-    //         ];
-
-    //         if (!array_key_exists('status', $data) && $data['status'] === 'APPROVED') {
-    //             $this->response['isError'] = true;
-    //             $this->response['data']    = $data;
-    //             $this->response['message'] = 'Paypal payment request problem...';
-    //         }
-
-    //         $client = Http::withHeaders($headers)
-    //             ->post("{$this->baseUrl}/v2/checkout/orders/{$orderId}/authorize");
-
-    //         if (!$client->ok()) {
-    //             $this->response['isError'] = true;
-    //             $this->response['data']    = $client->json();
-    //             $this->response['message'] = 'Paypal payment request problem...';
-    //         }
-
-    //         return $client->json();
-    //     } catch (Exception $e) {
-    //         return $e;
-    //     }
-    // }
 
     private function requestIdBuilder()
     {
