@@ -2,38 +2,20 @@
 
 namespace Leafwrap\PaymentDeals;
 
-use Leafwrap\PaymentDeals\Models\PaymentGateway;
-use Leafwrap\PaymentDeals\Models\PaymentTransaction;
-use Leafwrap\PaymentDeals\Services\PaypalService;
-use Leafwrap\PaymentDeals\Services\StripeService;
-use Leafwrap\PaymentDeals\Traits\Helper;
+use Leafwrap\PaymentDeals\Actions\PaypalAction;
+use Leafwrap\PaymentDeals\Actions\StripeAction;
+use Leafwrap\PaymentDeals\Services\BaseService;
 
-class PaymentDeal
+class PaymentDeal extends BaseService
 {
-    use Helper;
-
-    private string $userId;
-    private string $transactionId;
-    private string $orderId;
-    private string $gateway;
-    private float $amount;
-    private array $planData;
-
-    private mixed $paymentGateway;
-    private bool $exit = false;
-    private array $response;
-    private array $redirectUrls = [
-        'success' => '',
-        'cancel'  => '',
-    ];
-
-    public function initialize($planData, $amount, $userId, $gateway)
+    public function initialize($planData, $amount, $userId, $gateway, $currency = 'usd')
     {
         $this->planData      = $planData;
+        $this->currency      = $currency;
         $this->amount        = $amount;
         $this->userId        = $userId;
         $this->gateway       = $gateway;
-        $this->transactionId = strtoupper(uniqid('TRANS-'));
+        $this->transactionId = strtolower(uniqid('trans-'));
 
         $this->setPaymentResponse($this->checkGatewayCredentials());
         if ($this->getPaymentResponse()['isError']) {
@@ -45,176 +27,30 @@ class PaymentDeal
 
     public function checkout()
     {
-        if ($this->gateway === 'paypal') {
-            $this->paypalPay();
-        } elseif ($this->gateway === 'stripe') {
-            $this->stripePay();
-        }
+        match ($this->gateway) {
+            'paypal' => (new PaypalAction)->pay(),
+            'stripe' => (new StripeAction)->pay(),
+            default => $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
+        };
     }
 
     public function verify($transactionId)
     {
         $this->transactionCheck($transactionId);
+
         if ($this->getPaymentResponse()['isError']) {
             return;
         }
 
-        if ($this->gateway === 'paypal' && $this->orderId) {
-            $this->paypalOrderCheck();
-        } elseif ($this->gateway === 'stripe' && $this->orderId) {
-            $this->stripeOrderCheck();
-        }
-    }
-
-    private function transactionCheck($transactionId)
-    {
-        if (!$exist = PaymentTransaction::query()->where(['transaction_id' => $transactionId, 'status' => 'request'])->first()) {
-            $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction not found'));
+        if (!$this->gateway || !$this->orderId) {
+            $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid gateway & order id'));
             return;
         }
 
-        $this->transactionId = $exist->transaction_id;
-
-        if (!in_array($exist->gateway, ['paypal', 'stripe', 'razor_pay', 'bkash'])) {
-            $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction invalid gateway'));
-            return;
-        }
-
-        $this->gateway = $exist->gateway;
-        $this->orderId = $exist->request_payload['response']['id'] ?? '';
-
-        $this->setPaymentResponse($this->checkGatewayCredentials());
-        if ($this->getPaymentResponse()['isError']) {
-            return;
-        }
-
-        $this->setPaymentResponse($this->leafwrapResponse(false, true, 'success', 200, 'Transaction validated successfully'));
-    }
-
-    public function getPaymentResponse()
-    {
-        return $this->response;
-    }
-
-    private function checkGatewayCredentials()
-    {
-        if (!$this->paymentGateway = PaymentGateway::query()->where(['type' => $this->gateway])->first()) {
-            return $this->leafwrapResponse(true, false, 'error', 404, 'Payment gateway not found');
-        }
-
-        return $this->leafwrapResponse(false, true, 'success', 200, 'Payment gateway found');
-    }
-
-    private function setRedirectionUrls()
-    {
-        $this->redirectUrls = [
-            'success' => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$this->gateway}&transaction_id={$this->transactionId}&status=success",
-            'cancel'  => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$this->gateway}&transaction_id={$this->transactionId}&status=cancel",
-        ];
-    }
-
-    private function paymentRequestActivity($data)
-    {
-        if (!$exist = PaymentTransaction::query()->where(['transaction_id' => $this->transactionId])->first()) {
-            $payload = [
-                'transaction_id' => $this->transactionId,
-                'user_id'        => $this->userId,
-                'gateway'        => $this->gateway,
-                'amount'         => $this->amount,
-                'plan_data'      => $this->planData,
-            ];
-            PaymentTransaction::query()->create(array_merge($payload, $data));
-            return;
-        }
-        $exist->update($data);
-    }
-
-    private function paypalPay()
-    {
-        if (!$service = $this->paypalInit()) {
-            return;
-        }
-
-        $this->setPaymentResponse($service->paymentRequest(['currency' => 'usd', 'amount' => $this->amount], $this->redirectUrls));
-        if ($this->getPaymentResponse()['isError']) {
-            return;
-        }
-
-        $this->paymentRequestActivity(['request_payload' => $this->getPaymentResponse()['data']]);
-    }
-
-    private function stripePay()
-    {
-        if (!$service = $this->stripeInit()) {
-            return;
-        }
-
-        $this->setPaymentResponse($service->paymentRequest(['currency' => 'usd', 'amount' => $this->amount], $this->redirectUrls));
-        if ($this->getPaymentResponse()['isError']) {
-            return;
-        }
-
-        $this->paymentRequestActivity(['request_payload' => $this->getPaymentResponse()['data']]);
-    }
-
-    private function paypalOrderCheck()
-    {
-        if (!$service = $this->paypalInit()) {
-            return;
-        }
-
-        $this->setPaymentResponse($service->paymentValidate($this->orderId));
-        if ($this->getPaymentResponse()['isError']) {
-            return;
-        }
-
-        $this->paymentRequestActivity(['status' => 'verify', 'response_payload' => $this->getPaymentResponse()['data']]);
-    }
-
-    private function stripeOrderCheck()
-    {
-        if (!$service = $this->stripeInit()) {
-            return;
-        }
-
-        $this->setPaymentResponse($service->paymentValidate($this->orderId));
-        if ($this->getPaymentResponse()['isError']) {
-            return;
-        }
-
-        $this->paymentRequestActivity(['status' => 'verify', 'response_payload' => $this->getPaymentResponse()['data']]);
-    }
-
-    private function setPaymentResponse($data)
-    {
-        $this->response = $data;
-    }
-
-    private function paypalInit()
-    {
-        $service = new PaypalService(
-            $this->paymentGateway->credentials['app_key'] ?? '',
-            $this->paymentGateway->credentials['secret_key'] ?? '',
-            $this->paymentGateway->credentials['sandbox'] ?? true
-        );
-
-        $this->setPaymentResponse($service->tokenBuilder());
-        if ($this->getPaymentResponse()['isError']) {
-            return;
-        }
-
-        return $service;
-    }
-
-    private function stripeInit()
-    {
-        $service = new StripeService($this->paymentGateway->credentials['secret_key'] ?? '');
-
-        $this->setPaymentResponse($service->tokenBuilder());
-        if ($this->getPaymentResponse()['isError']) {
-            return;
-        }
-
-        return $service;
+        match ($this->gateway) {
+            'paypal' => (new PaypalAction)->orderCheck(),
+            'stripe' => (new StripeAction)->orderCheck(),
+            default => $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
+        };
     }
 }
