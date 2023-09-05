@@ -121,7 +121,9 @@ class PaypalService implements PaymentContract
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
             }
 
-            return $this->leafwrapResponse(false, true, 'success', 200, 'Paypal order validated successfully...', $client->json());
+            $client = $client->json();
+
+            $this->paymentConfirm($client, $orderId);
         } catch (Exception $e) {
             return $e;
         }
