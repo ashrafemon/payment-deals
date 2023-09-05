@@ -10,29 +10,28 @@ class BaseService
 {
     use Helper;
 
-    protected string $userId;
-    protected string $transactionId;
-    protected string $orderId;
-    protected string $gateway;
-    protected string $currency;
-    protected float $amount;
-    protected array $planData;
-
-    protected mixed $paymentGateway;
-    protected array $response;
-    protected array $redirectUrls = [
+    static string $userId;
+    static string $transactionId;
+    static string $orderId;
+    static string $gateway;
+    static string $currency;
+    static float $amount;
+    static array $planData;
+    static mixed $paymentGateway;
+    static array $response;
+    static array $redirectUrls = [
         'success' => '',
         'cancel'  => '',
     ];
 
     public function getPaymentResponse()
     {
-        return $this->response;
+        return BaseService::$response;
     }
 
     protected function setPaymentResponse($data)
     {
-        $this->response = $data;
+        BaseService::$response = $data;
     }
 
     protected function checkGatewayCredentials()
@@ -46,9 +45,12 @@ class BaseService
 
     protected function setRedirectionUrls()
     {
+        $gateway       = BaseService::$gateway;
+        $transactionId = BaseService::$transactionId;
+
         BaseService::$redirectUrls = [
-            'success' => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={BaseService::$gateway}&transaction_id={BaseService::$transactionId}&status=success",
-            'cancel'  => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={BaseService::$gateway}&transaction_id={BaseService::$transactionId}&status=cancel",
+            'success' => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=success",
+            'cancel'  => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=cancel",
         ];
     }
 

@@ -41,7 +41,7 @@ class PaypalService implements PaymentContract
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid credentials');
             }
 
-            cache()->remember('paypal_token', now()->addHours(3), function () {
+            cache()->remember('paypal_token', now()->addHour(), function () {
                 $client = Http::withBasicAuth($this->appKey, $this->secretKey)
                     ->withHeaders(['Content-Type' => 'application/x-www-form-urlencoded'])
                     ->asForm()
