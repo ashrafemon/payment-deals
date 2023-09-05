@@ -55,6 +55,9 @@ class PaymentDeal
     public function verify($transactionId)
     {
         $this->transactionCheck($transactionId);
+        if ($this->getPaymentResponse()['isError']) {
+            return;
+        }
 
         if ($this->gateway === 'paypal' && $this->orderId) {
             $this->paypalOrderCheck();
