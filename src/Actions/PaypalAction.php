@@ -49,7 +49,7 @@ class PaypalAction extends BaseService
         }
 
         $payload = $this->getPaymentResponse();
-        if ($payload['isSuccess'] && $payload['data'] && array_key_exists('status', $payload) && $payload['status'] === 'COMPLETED') {
+        if ($payload['isSuccess'] && $payload['data'] && array_key_exists('status', $payload['data']) && $payload['data']['status'] === 'COMPLETED') {
             $this->paymentActivity(['status' => 'completed', 'response_payload' => $this->getPaymentResponse()['data']]);
         }
     }

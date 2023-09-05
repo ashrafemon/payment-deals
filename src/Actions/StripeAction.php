@@ -45,7 +45,7 @@ class StripeAction extends BaseService
         }
 
         $payload = $this->getPaymentResponse();
-        if ($payload['isSuccess'] && $payload['data'] && array_key_exists('status', $payload) && $payload['status'] === 'complete') {
+        if ($payload['isSuccess'] && $payload['data'] && array_key_exists('status', $payload['data']) && $payload['data']['status'] === 'complete') {
             $this->paymentActivity(['status' => 'completed', 'response_payload' => $this->getPaymentResponse()['data']]);
         }
     }
