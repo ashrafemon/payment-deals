@@ -1,8 +1,8 @@
-Payment Deal Library: Empowering Seamless Online Payments with Laravel
+# Payment Deal Library: Empowering Seamless Online Payments with Laravel
 
 The Payment Deal Library is a powerful and versatile Laravel package designed to simplify and enhance online payment processing. Whether you're a business owner, developer, or entrepreneur, this library provides you with a comprehensive toolkit for integrating popular payment gateways seamlessly into your web applications.
 
-Key Features:
+#### Key Features:
 
 Gateway Diversity: Payment Deal offers support for an array of popular payment gateways, including PayPal, Stripe, Razorpay, bKash, and more. This versatility allows you to cater to a global audience and adapt to various payment preferences.
 
@@ -19,5 +19,3 @@ Customization: Tailor the payment experience to match your brand by customizing 
 Error Handling: Robust error handling mechanisms ensure that you can easily troubleshoot and resolve issues, enhancing the reliability of your payment processing.
 
 Ongoing Updates: The Payment Deal Library is actively maintained, meaning you'll receive updates, bug fixes, and support to keep your payment systems running smoothly.
-
-Whether you're running an e-commerce platform, a subscription-based service, or a donation-driven website, Payment Deal Library equips you with the tools needed to handle transactions efficiently, securely, and with ease. Say goodbye to payment gateway integration headaches and embrace a smoother, more efficient online payment experience with Payment Deal.
