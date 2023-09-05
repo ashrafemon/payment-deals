@@ -115,11 +115,48 @@ class PaypalService implements PaymentContract
                 'Authorization'     => $this->tokens[0] . $this->tokens[1],
             ];
 
-            $client = Http::withHeaders($headers)->post("{$this->baseUrl}/v2/checkout/orders/{$orderId}/capture");
+            $client = Http::withHeaders($headers)->get("{$this->baseUrl}/v2/checkout/orders/{$orderId}");
 
             if (!$client->ok()) {
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
             }
+
+            $client = $client->json();
+
+            return $this->leafwrapResponse(false, true, 'success', 200, 'Paypal order validated successfully...', $client->json());
+        } catch (Exception $e) {
+            return $e;
+        }
+    }
+
+    private function paymentConfirm($data, $orderId)
+    {
+        try {
+            $headers = [
+                'PayPal-Request-Id' => $this->requestId,
+                'Content-Type'      => 'application/json',
+                'Authorization'     => $this->tokens[0] . $this->tokens[1],
+            ];
+
+            if (!array_key_exists('status', $data)) {
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $data);
+            } else {
+                if ($data['status'] === 'PAYER_ACTION_REQUIRED') {
+                    return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment requires payment. Please pay first...', $data);
+                } elseif ($data['status'] === 'COMPLETED') {
+                    return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment already paid...', $data);
+                }
+            }
+
+            $client = Http::withHeaders($headers)->post("{$this->baseUrl}/v2/checkout/orders/{$orderId}/authorize", [
+                'payment_source' => $data['payment_source'],
+            ]);
+
+            if (!$client->ok()) {
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
+            }
+
+            $client = $client->json();
 
             return $this->leafwrapResponse(false, true, 'success', 200, 'Paypal order validated successfully...', $client->json());
         } catch (Exception $e) {
