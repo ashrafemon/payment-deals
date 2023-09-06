@@ -76,7 +76,7 @@ class PaypalService implements PaymentContract
 
             return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
         } catch (Exception $e) {
-            return $e;
+            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
@@ -118,7 +118,7 @@ class PaypalService implements PaymentContract
 
             return $this->leafwrapResponse(false, true, 'success', 201, 'Paypal request added successfully...', $payload);
         } catch (Exception $e) {
-            return $e;
+            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
@@ -143,7 +143,7 @@ class PaypalService implements PaymentContract
 
             return $this->paymentConfirm($client, $orderId);
         } catch (Exception $e) {
-            return $e;
+            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
@@ -184,7 +184,7 @@ class PaypalService implements PaymentContract
 
             return $this->leafwrapResponse(false, true, 'success', 200, 'Paypal order validated successfully...', $client->json());
         } catch (Exception $e) {
-            return $e;
+            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 

@@ -29,7 +29,7 @@ class RazorPayService implements PaymentContract
             $this->tokens = [$this->appKey, $this->secretKey];
             return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
         } catch (Exception $e) {
-            return $e;
+            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
@@ -73,7 +73,7 @@ class RazorPayService implements PaymentContract
 
             return $this->leafwrapResponse(false, true, 'success', 201, 'RazorPay request added successfully...', $payload);
         } catch (Exception $e) {
-            return $e;
+            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
@@ -92,7 +92,7 @@ class RazorPayService implements PaymentContract
 
             return $this->leafwrapResponse(false, true, 'success', 201, 'RazorPay order validated successfully...', $client->json());
         } catch (Exception $e) {
-            return $e;
+            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 }

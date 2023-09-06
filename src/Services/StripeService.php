@@ -29,7 +29,7 @@ class StripeService implements PaymentContract
             $this->tokens = ['Bearer ', $this->secretKey];
             return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
         } catch (Exception $e) {
-            return $e;
+            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
@@ -65,7 +65,7 @@ class StripeService implements PaymentContract
 
             return $this->leafwrapResponse(false, true, 'success', 201, 'Stripe request added successfully...', $payload);
         } catch (Exception $e) {
-            return $e;
+            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
@@ -84,7 +84,7 @@ class StripeService implements PaymentContract
 
             return $this->leafwrapResponse(false, true, 'success', 201, 'Stripe order validated successfully...', $client->json());
         } catch (Exception $e) {
-            return $e;
+            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 }
