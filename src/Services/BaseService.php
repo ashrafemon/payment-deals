@@ -79,13 +79,16 @@ class BaseService
 
         BaseService::$transactionId = $exist->transaction_id;
 
-        if (!in_array($exist->gateway, ['paypal', 'stripe', 'razor_pay', 'bkash'])) {
+        if (!in_array($exist->gateway, ['paypal', 'stripe', 'razorpay', 'bkash'])) {
             $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction invalid gateway'));
             return;
         }
 
         BaseService::$gateway = $exist->gateway;
-        BaseService::$orderId = $exist->request_payload['response']['id'] ?? '';
+        BaseService::$orderId = match ($exist->gateway) {
+            'bkash' => $exist->request_payload['response']['paymentID'] ?? '',
+            default =>  $exist->request_payload['response']['id'] ?? ''
+        };
 
         $this->setPaymentResponse($this->checkGatewayCredentials());
         if ($this->getPaymentResponse()['isError']) {

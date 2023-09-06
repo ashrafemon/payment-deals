@@ -30,8 +30,9 @@ class PaymentGatewayRequest extends FormRequest
     {
         return [
             'type'        => 'sometimes|required|' . Rule::in(['online', 'offline']),
-            'gateway'     => 'sometimes|required|' . Rule::in(['paypal', 'stripe', 'sslcommerz', 'razor_pay', 'bkash']),
+            'gateway'     => 'sometimes|required',
             'credentials' => 'sometimes|array',
+            'additional'  => 'sometimes|array',
             'status'      => 'sometimes|required|boolean',
         ];
     }

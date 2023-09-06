@@ -16,6 +16,12 @@ class PaypalService implements PaymentContract
     private string $baseUrl;
     private string $requestId;
     private array $tokens;
+    private array $urls = [
+        'token' => '/v1/oauth2/token',
+        'request' => '/v2/checkout/orders',
+        'query' => '/v2/checkout/orders/:orderId',
+        'execute' => '/v2/checkout/orders/:orderId/capture',
+    ];
 
     public function __construct(
         private string $appKey,
@@ -41,11 +47,13 @@ class PaypalService implements PaymentContract
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid credentials');
             }
 
-            cache()->remember('paypal_token', now()->addHour(), function () {
+            $url = $this->baseUrl . $this->urls['token'];
+
+            cache()->remember('paypal_token', now()->addHour(), function () use ($url) {
                 $client = Http::withBasicAuth($this->appKey, $this->secretKey)
                     ->withHeaders(['Content-Type' => 'application/x-www-form-urlencoded'])
                     ->asForm()
-                    ->post("{$this->baseUrl}/v1/oauth2/token", [
+                    ->post($url, [
                         'grant_type'                => 'client_credentials',
                         'ignoreCache'               => true,
                         'return_authn_schemes'      => true,
@@ -82,8 +90,10 @@ class PaypalService implements PaymentContract
                 'Authorization'     => $this->tokens[0] . $this->tokens[1],
             ];
 
+            $url = $this->baseUrl . $this->urls['request'];
+
             $client = Http::withHeaders($headers)
-                ->post("{$this->baseUrl}/v2/checkout/orders", [
+                ->post($url, [
                     'intent'              => 'CAPTURE',
                     'purchase_units'      => [[
                         "reference_id" => uniqid(),
@@ -121,7 +131,9 @@ class PaypalService implements PaymentContract
                 'Authorization'     => $this->tokens[0] . $this->tokens[1],
             ];
 
-            $client = Http::withHeaders($headers)->get("{$this->baseUrl}/v2/checkout/orders/{$orderId}");
+            $url = $this->baseUrl . str_replace(':orderId', $orderId, $this->urls['query']);
+
+            $client = Http::withHeaders($headers)->get($url);
 
             if (!$client->successful()) {
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
@@ -155,7 +167,9 @@ class PaypalService implements PaymentContract
                 }
             }
 
-            $client = Http::withHeaders($headers)->post("{$this->baseUrl}/v2/checkout/orders/{$orderId}/capture", [
+            $url = $this->baseUrl . str_replace(':orderId', $orderId, $this->urls['execute']);
+
+            $client = Http::withHeaders($headers)->post($url, [
                 'application_context' => [
                     'return_url' => '',
                     'cancel_url' => '',
@@ -176,6 +190,6 @@ class PaypalService implements PaymentContract
 
     private function requestIdBuilder()
     {
-        $this->requestId = cache()->remember('paypal_id', now()->addMinutes(10), fn() => (string) Str::uuid());
+        $this->requestId = cache()->remember('paypal_id', now()->addMinutes(10), fn () => (string) Str::uuid());
     }
 }

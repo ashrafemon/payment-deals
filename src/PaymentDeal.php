@@ -2,7 +2,9 @@
 
 namespace Leafwrap\PaymentDeals;
 
+use Leafwrap\PaymentDeals\Actions\BkashAction;
 use Leafwrap\PaymentDeals\Actions\PaypalAction;
+use Leafwrap\PaymentDeals\Actions\RazorPayAction;
 use Leafwrap\PaymentDeals\Actions\StripeAction;
 use Leafwrap\PaymentDeals\Services\BaseService;
 
@@ -30,6 +32,8 @@ class PaymentDeal extends BaseService
         match (BaseService::$gateway) {
             'paypal' => (new PaypalAction)->pay(),
             'stripe' => (new StripeAction)->pay(),
+            'bkash' => (new BkashAction)->pay(),
+            'razorpay' => (new RazorPayAction)->pay(),
             default => $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
         };
     }
@@ -50,6 +54,8 @@ class PaymentDeal extends BaseService
         match (BaseService::$gateway) {
             'paypal' => (new PaypalAction)->orderCheck(),
             'stripe' => (new StripeAction)->orderCheck(),
+            'bkash' => (new BkashAction)->orderCheck(),
+            'razorpay' => (new RazorPayAction)->orderCheck(),
             default => $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
         };
     }

@@ -12,6 +12,12 @@ class StripeService implements PaymentContract
     use Helper;
 
     private array $tokens;
+    private string $baseUrl = 'https://api.stripe.com';
+    private array $urls = [
+        'token' => null,
+        'request' => '/v1/checkout/sessions',
+        'query' => '/v1/checkout/sessions/:orderId',
+    ];
 
     public function __construct(private string $secretKey)
     {
@@ -32,11 +38,13 @@ class StripeService implements PaymentContract
         try {
             $headers = ['Authorization' => $this->tokens[0] . $this->tokens[1], 'Content-Type' => 'application/x-www-form-urlencoded'];
 
+            $url = $this->baseUrl . $this->urls['request'];
+
             $client = Http::withHeaders($headers)
                 ->asForm()
-                ->post('https://api.stripe.com/v1/checkout/sessions', [
+                ->post($url, [
                     'line_items'  => [[
-                        'price_data' => ['currency' => $dta['currency'] ?? 'usd', 'product_data' => ['name' => 'Product'], 'unit_amount_decimal' => $data['amount'] * 100],
+                        'price_data' => ['currency' => $data['currency'] ?? 'usd', 'product_data' => ['name' => 'Product'], 'unit_amount_decimal' => $data['amount'] * 100],
                         'quantity'   => 1,
                     ]],
                     'mode'        => "payment",
@@ -44,7 +52,7 @@ class StripeService implements PaymentContract
                     'cancel_url'  => $urls['cancel'],
                 ]);
 
-            if (!$client->ok()) {
+            if (!$client->successful()) {
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
             }
 
@@ -66,10 +74,11 @@ class StripeService implements PaymentContract
         try {
             $headers = ['Authorization' => $this->tokens[0] . $this->tokens[1]];
 
-            $client = Http::withHeaders($headers)
-                ->get("https://api.stripe.com/v1/checkout/sessions/{$orderId}");
+            $url = $this->baseUrl . str_replace(':orderId', $orderId, $this->urls['query']);
 
-            if (!$client->ok()) {
+            $client = Http::withHeaders($headers)->get($url);
+
+            if (!$client->successful()) {
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
             }
 
