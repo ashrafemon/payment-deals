@@ -1,6 +1,6 @@
 {
   "name": "leafwrap/payment-deals",
-  "description": "Payment Deal Library: A Laravel-based online payment gateway solution featuring popular payment gateways like PayPal, Stripe, Razorpay, bKash, and more. Seamlessly integrate secure and diverse payment options into your web applications with ease.",
+  "description": "A Laravel-based online payment gateway solution featuring popular payment gateways like PayPal, Stripe, Razorpay, bKash, and more. Seamlessly integrate secure and diverse payment options into your web applications with ease.",
   "type": "library",
   "license": "MIT",
   "autoload": {
