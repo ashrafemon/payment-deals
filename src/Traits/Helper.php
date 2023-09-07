@@ -4,29 +4,14 @@ namespace Leafwrap\PaymentDeals\Traits;
 
 trait Helper
 {
-    public function leafwrapResponse($isError = false, $isSuccess = true, $status = 'success', $statusCode = 200, $message = null, $data = null)
+    public function leafwrapResponse($isError = false, $isSuccess = true, $status = 'success', $statusCode = 200, $message = null, $data = null): array
     {
-        return [
-            'isError'    => $isError,
-            'isSuccess'  => $isSuccess,
-            'status'     => $status,
-            'statusCode' => $statusCode,
-            'message'    => $message,
-            'data'       => $data,
-        ];
+        return ['isError' => $isError, 'isSuccess' => $isSuccess, 'status' => $status, 'statusCode' => $statusCode, 'message' => $message, 'data' => $data,];
     }
 
     protected function leafwrapPaginate($payload): array
     {
-        return [
-            'data'         => $payload['data'],
-            'current_page' => $payload['current_page'],
-            'last_page'    => $payload['last_page'],
-            'per_page'     => $payload['per_page'],
-            'from'         => $payload['from'],
-            'to'           => $payload['to'],
-            'total'        => $payload['total'],
-        ];
+        return ['data' => $payload['data'], 'current_page' => $payload['current_page'], 'last_page' => $payload['last_page'], 'per_page' => $payload['per_page'], 'from' => $payload['from'], 'to' => $payload['to'], 'total' => $payload['total'],];
     }
 
     protected function leafwrapMessage($message = 'No data found', $statusCode = 404, $status = 'error')
@@ -52,7 +37,7 @@ trait Helper
 
     protected function leafwrapValidateError($data, $override = false)
     {
-        $errors       = [];
+        $errors = [];
         $errorPayload = !$override ? $data->getMessages() : $data;
 
         foreach ($errorPayload as $key => $value) {

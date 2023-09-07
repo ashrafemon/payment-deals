@@ -2,83 +2,83 @@
 
 namespace Leafwrap\PaymentDeals;
 
-use Leafwrap\PaymentDeals\Actions\BkashAction;
-use Leafwrap\PaymentDeals\Actions\PaypalAction;
-use Leafwrap\PaymentDeals\Actions\RazorPayAction;
-use Leafwrap\PaymentDeals\Actions\StripeAction;
 use Leafwrap\PaymentDeals\Services\BaseService;
+use Leafwrap\PaymentDeals\Services\BkashService;
+use Leafwrap\PaymentDeals\Services\PaypalService;
+use Leafwrap\PaymentDeals\Services\RazorPayService;
+use Leafwrap\PaymentDeals\Services\StripeService;
 
 class PaymentDeal extends BaseService
 {
-    public function init($planData, $amount, $userId, $gateway, $currency = 'usd')
+    public function init($planData, $amount, $userId, $gateway, $currency = 'usd'): void
     {
-        BaseService::$planData      = $planData;
-        BaseService::$currency      = $currency;
-        BaseService::$amount        = $amount;
-        BaseService::$userId        = $userId;
-        BaseService::$gateway       = $gateway;
+        PaymentDeal::$planData = $planData;
+        BaseService::$currency = $currency;
+        BaseService::$amount = $amount;
+        BaseService::$userId = $userId;
+        BaseService::$gateway = $gateway;
         BaseService::$transactionId = strtolower(uniqid('trans-'));
 
-        $this->setPaymentResponse($this->checkGatewayCredentials());
-        if ($this->getPaymentResponse()['isError']) {
+        $this->setFeedback($this->verifyCredentials());
+        if ($this->feedback()['isError']) {
             return;
         }
 
         $this->setRedirectionUrls();
     }
 
-    public function pay()
+    public function pay(): void
     {
         match (BaseService::$gateway) {
-            'paypal' => (new PaypalAction)->pay(),
-            'stripe' => (new StripeAction)->pay(),
-            'bkash' => (new BkashAction)->pay(),
-            'razorpay' => (new RazorPayAction)->pay(),
-            default => $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
+            'paypal' => (new PaypalService)->pay(),
+            'stripe' => (new StripeService)->pay(),
+            'bkash' => (new BkashService)->pay(),
+            'razorpay' => (new RazorPayService)->pay(),
+            default => $this->setFeedback($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
         };
     }
 
-    public function query($transactionId)
+    public function query($transactionId): void
     {
-        $this->transactionCheck($transactionId);
+        $this->verifyTransaction($transactionId);
 
-        if ($this->getPaymentResponse()['isError']) {
+        if ($this->feedback()['isError']) {
             return;
         }
 
         if (!BaseService::$gateway || !BaseService::$orderId) {
-            $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid gateway & order id'));
+            $this->setFeedback($this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid gateway & order id'));
             return;
         }
 
         match (BaseService::$gateway) {
-            'paypal' => (new PaypalAction)->check(),
-            'stripe' => (new StripeAction)->check(),
-            'bkash' => (new BkashAction)->check(),
-            'razorpay' => (new RazorPayAction)->check(),
-            default => $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
+            'paypal' => (new PaypalService)->check(),
+            'stripe' => (new StripeService)->check(),
+            'bkash' => (new BkashService)->check(),
+            'razorpay' => (new RazorPayService)->check(),
+            default => $this->setFeedback($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
         };
     }
 
-    public function execute($transactionId)
+    public function execute($transactionId): void
     {
-        $this->transactionCheck($transactionId);
+        $this->verifyTransaction($transactionId);
 
-        if ($this->getPaymentResponse()['isError']) {
+        if ($this->feedback()['isError']) {
             return;
         }
 
         if (!BaseService::$gateway || !BaseService::$orderId) {
-            $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid gateway & order id'));
+            $this->setFeedback($this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid gateway & order id'));
             return;
         }
 
         match (BaseService::$gateway) {
-            'paypal' => (new PaypalAction)->execute(),
-            'stripe' => (new StripeAction)->execute(),
-            'bkash' => (new BkashAction)->execute(),
-            'razorpay' => (new RazorPayAction)->execute(),
-            default => $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
+            'paypal' => (new PaypalService)->execute(),
+            'stripe' => (new StripeService)->execute(),
+            'bkash' => (new BkashService)->execute(),
+            'razorpay' => (new RazorPayService)->execute(),
+            default => $this->setFeedback($this->leafwrapResponse(true, false, 'error', 400, 'Please select a valid payment gateway'))
         };
     }
 }

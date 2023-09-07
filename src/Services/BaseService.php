@@ -19,23 +19,71 @@ class BaseService
     static float $amount;
     static array $planData;
     static mixed $paymentGateway;
-    static array $response;
-    static array $redirectUrls = [
-        'success' => '',
-        'cancel'  => '',
-    ];
+    static array $paymentFeedback;
+    static array $redirectUrls = ['success' => '', 'cancel' => '',];
 
-    public function getPaymentResponse()
+    protected function setRedirectionUrls(): void
     {
-        return BaseService::$response;
+        $gateway = BaseService::$gateway;
+        $transactionId = BaseService::$transactionId;
+
+        BaseService::$redirectUrls = ['success' => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=success", 'cancel' => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=cancel",];
     }
 
-    protected function setPaymentResponse($data)
+    protected function paymentActivity($data): void
     {
-        BaseService::$response = $data;
+        try {
+            if (!$exist = PaymentTransaction::query()->where(['transaction_id' => BaseService::$transactionId])->first()) {
+                $payload = ['transaction_id' => BaseService::$transactionId, 'user_id' => BaseService::$userId, 'gateway' => BaseService::$gateway, 'amount' => BaseService::$amount, 'plan_data' => BaseService::$planData,];
+                PaymentTransaction::query()->create(array_merge($payload, $data));
+                return;
+            }
+            $exist->update($data);
+        } catch (Exception $e) {
+            $this->setFeedback($this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage()));
+            return;
+        }
     }
 
-    protected function checkGatewayCredentials()
+    protected function setFeedback($data): void
+    {
+        BaseService::$paymentFeedback = $data;
+    }
+
+    protected function verifyTransaction($transactionId): void
+    {
+        try {
+            if (!$exist = PaymentTransaction::query()->where(['transaction_id' => $transactionId, 'status' => 'request'])->first()) {
+                $this->setFeedback($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction not found'));
+                return;
+            }
+
+            BaseService::$transactionId = $exist->transaction_id;
+
+            if (!in_array($exist->gateway, ['paypal', 'stripe', 'razorpay', 'bkash'])) {
+                $this->setFeedback($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction invalid gateway'));
+                return;
+            }
+
+            BaseService::$gateway = $exist->gateway;
+            BaseService::$orderId = match ($exist->gateway) {
+                'bkash' => $exist->request_payload['response']['paymentID'] ?? '',
+                default => $exist->request_payload['response']['id'] ?? ''
+            };
+
+            $this->setFeedback($this->verifyCredentials());
+            if ($this->feedback()['isError']) {
+                return;
+            }
+
+            $this->setFeedback($this->leafwrapResponse(false, true, 'success', 200, 'Transaction validated successfully'));
+        } catch (Exception $e) {
+            $this->setFeedback($this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage()));
+            return;
+        }
+    }
+
+    protected function verifyCredentials(): array
     {
         try {
             if (!BaseService::$paymentGateway = PaymentGateway::query()->where(['type' => 'online', 'gateway' => BaseService::$gateway])->first()) {
@@ -48,68 +96,8 @@ class BaseService
         }
     }
 
-    protected function setRedirectionUrls()
+    public function feedback(): array
     {
-        $gateway       = BaseService::$gateway;
-        $transactionId = BaseService::$transactionId;
-
-        BaseService::$redirectUrls = [
-            'success' => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=success",
-            'cancel'  => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=cancel",
-        ];
-    }
-
-    protected function paymentActivity($data)
-    {
-        try {
-            if (!$exist = PaymentTransaction::query()->where(['transaction_id' => BaseService::$transactionId])->first()) {
-                $payload = [
-                    'transaction_id' => BaseService::$transactionId,
-                    'user_id'        => BaseService::$userId,
-                    'gateway'        => BaseService::$gateway,
-                    'amount'         => BaseService::$amount,
-                    'plan_data'      => BaseService::$planData,
-                ];
-                PaymentTransaction::query()->create(array_merge($payload, $data));
-                return;
-            }
-            $exist->update($data);
-        } catch (Exception $e) {
-            $this->setPaymentResponse($this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage()));
-            return;
-        }
-    }
-
-    protected function transactionCheck($transactionId)
-    {
-        try {
-            if (!$exist = PaymentTransaction::query()->where(['transaction_id' => $transactionId, 'status' => 'request'])->first()) {
-                $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction not found'));
-                return;
-            }
-
-            BaseService::$transactionId = $exist->transaction_id;
-
-            if (!in_array($exist->gateway, ['paypal', 'stripe', 'razorpay', 'bkash'])) {
-                $this->setPaymentResponse($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction invalid gateway'));
-                return;
-            }
-
-            BaseService::$gateway = $exist->gateway;
-            BaseService::$orderId = match ($exist->gateway) {
-                'bkash' => $exist->request_payload['response']['paymentID'] ?? '',
-                default =>  $exist->request_payload['response']['id'] ?? ''
-            };
-
-            $this->setPaymentResponse($this->checkGatewayCredentials());
-            if ($this->getPaymentResponse()['isError']) {
-                return;
-            }
-
-            $this->setPaymentResponse($this->leafwrapResponse(false, true, 'success', 200, 'Transaction validated successfully'));
-        } catch (Exception $e) {
-            $this->setPaymentResponse($this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage()));
-            return;
-        }
+        return BaseService::$paymentFeedback;
     }
 }

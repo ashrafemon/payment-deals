@@ -2,101 +2,60 @@
 
 namespace Leafwrap\PaymentDeals\Services;
 
-use Exception;
-use Illuminate\Support\Facades\Http;
-use Leafwrap\PaymentDeals\Contracts\PaymentContract;
-use Leafwrap\PaymentDeals\Traits\Helper;
+use Leafwrap\PaymentDeals\Contracts\ServiceContract;
+use Leafwrap\PaymentDeals\Providers\RazorPay;
 
-class RazorPayService implements PaymentContract
+class RazorPayService extends BaseService implements ServiceContract
 {
-    use Helper;
-
-    private array $tokens;
-    private string $baseUrl = 'https://api.razorpay.com';
-    private array $urls = [
-        'token' => null,
-        'request' => '/v1/payment_links',
-        'query' => '/v1/payment_links/:orderId',
-    ];
-
-    public function __construct(private string $appKey, private string $secretKey)
+    public function pay(): void
     {
-    }
-
-    public function tokenizer()
-    {
-        try {
-            if (!$this->appKey || !$this->secretKey) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid credentials');
-            }
-
-            $this->tokens = [$this->appKey, $this->secretKey];
-            return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
-        } catch (Exception $e) {
-            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
+        if (!$service = $this->init()) {
+            return;
         }
-    }
 
-    public function orderRequest($data, $urls)
-    {
-        try {
-            $headers = ["Content-Type" => "application/json"];
-
-            $url = $this->baseUrl . $this->urls['request'];
-
-            $client = Http::withBasicAuth($this->tokens[0], $this->tokens[1])
-                ->withHeaders($headers)
-                ->post($url, [
-                    "amount"          => $data['amount'],
-                    "currency"        => strtoupper($data['currency']) ?? 'USD',
-                    "description"     => $data['description'] ?? '',
-                    "customer"        => [
-                        "name"    => $data['customer']['name'] ?? 'Payment Deal',
-                        "contact" => $data['customer']['contact'] ?? '01900000000',
-                        "email"   => $data['customer']['email'] ?? 'ashraf.emon143@gmail.com',
-                    ],
-                    "notify"          => ["sms" => true, "email" => true],
-                    "reminder_enable" => true,
-                    "reference_id" => uniqid(),
-                    "expire_by" => strtotime(now()->addMinutes(20)),
-                    "accept_partial" => false,
-                    "callback_url" => $urls['success'],
-                    "callback_method" => 'get',
-                ]);
-
-            if (!$client->successful()) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'RazorPay payment request problem...', $client->json());
-            }
-
-            $client = $client->json();
-            if (!array_key_exists('short_url', $client)) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Something went wrong in razorpay transactions', $client);
-            }
-
-            $payload = ['response' => $client, 'url' => $client['short_url']];
-
-            return $this->leafwrapResponse(false, true, 'success', 201, 'RazorPay request added successfully...', $payload);
-        } catch (Exception $e) {
-            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
+        $this->setFeedback($service->orderRequest(['currency' => BaseService::$currency, 'amount' => BaseService::$amount], BaseService::$redirectUrls));
+        if ($this->feedback()['isError']) {
+            return;
         }
+
+        $this->paymentActivity(['request_payload' => $this->feedback()['data']]);
     }
 
-    public function orderQuery($orderId)
+    private function init(): ?RazorPay
     {
-        try {
-            $headers = ["Content-Type" => 'application/json'];
+        $service = new RazorPay(BaseService::$paymentGateway->credentials['app_key'] ?? '', BaseService::$paymentGateway->credentials['secret_key'] ?? '');
 
-            $url = $this->baseUrl . str_replace(':orderId', $orderId, $this->urls['query']);
+        $this->setFeedback($service->tokenizer());
+        if ($this->feedback()['isError']) {
+            return null;
+        }
 
-            $client = Http::withBasicAuth($this->tokens[0], $this->tokens[1])->withHeaders($headers)->get($url);
+        return $service;
+    }
 
-            if (!$client->successful()) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'RazorPay payment request problem...', $client->json());
-            }
+    public function check(): void
+    {
+        if (!$service = $this->init()) {
+            return;
+        }
 
-            return $this->leafwrapResponse(false, true, 'success', 201, 'RazorPay payment fetch successfully', $client->json());
-        } catch (Exception $e) {
-            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
+        $this->setFeedback($service->orderQuery(BaseService::$orderId));
+    }
+
+    public function execute(): void
+    {
+        if (!$service = $this->init()) {
+            return;
+        }
+
+        $this->setFeedback($service->orderQuery(BaseService::$orderId));
+        if ($this->feedback()['isError']) {
+            return;
+        }
+
+        $payload = $this->feedback();
+        if ($payload['isSuccess'] && $payload['data'] && array_key_exists('status', $payload['data']) && $payload['data']['status'] === 'paid') {
+            $this->paymentActivity(['status' => 'completed', 'response_payload' => $this->feedback()['data']]);
         }
     }
 }

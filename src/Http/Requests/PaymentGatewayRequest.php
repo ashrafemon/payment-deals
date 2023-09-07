@@ -11,12 +11,13 @@ use Leafwrap\PaymentDeals\Traits\Helper;
 class PaymentGatewayRequest extends FormRequest
 {
     use Helper;
+
     /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -26,18 +27,18 @@ class PaymentGatewayRequest extends FormRequest
      *
      * @return array<string, mixed>
      */
-    public function rules()
+    public function rules(): array
     {
         return [
-            'type'        => 'sometimes|required|' . Rule::in(['online', 'offline']),
-            'gateway'     => 'sometimes|required',
+            'type' => 'sometimes|required|' . Rule::in(['online', 'offline']),
+            'gateway' => 'sometimes|required',
             'credentials' => 'sometimes|array',
-            'additional'  => 'sometimes|array',
-            'status'      => 'sometimes|required|boolean',
+            'additional' => 'sometimes|array',
+            'status' => 'sometimes|required|boolean',
         ];
     }
 
-    protected function failedValidation(Validator $validator)
+    protected function failedValidation(Validator $validator): void
     {
         if ($this->wantsJson() || $this->ajax()) {
             throw new HttpResponseException($this->leafwrapValidateError($validator->errors()));

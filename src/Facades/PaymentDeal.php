@@ -9,9 +9,8 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Leafwrap\PaymentDeals\PaymentDeal pay()
  * @method static \Leafwrap\PaymentDeals\PaymentDeal query(string $transactionId)
  * @method static \Leafwrap\PaymentDeals\PaymentDeal execute(string $transactionId)
- * @method static \Leafwrap\PaymentDeals\PaymentDeal getPaymentResponse()
+ * @method static \Leafwrap\PaymentDeals\PaymentDeal feedback()
  */
-
 class PaymentDeal extends Facade
 {
     protected static function getFacadeAccessor()

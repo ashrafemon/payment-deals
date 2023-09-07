@@ -2,93 +2,60 @@
 
 namespace Leafwrap\PaymentDeals\Services;
 
-use Exception;
-use Illuminate\Support\Facades\Http;
-use Leafwrap\PaymentDeals\Contracts\PaymentContract;
-use Leafwrap\PaymentDeals\Traits\Helper;
+use Leafwrap\PaymentDeals\Contracts\ServiceContract;
+use Leafwrap\PaymentDeals\Providers\Stripe;
 
-class StripeService implements PaymentContract
+class StripeService extends BaseService implements ServiceContract
 {
-    use Helper;
-
-    private array $tokens;
-    private string $baseUrl = 'https://api.stripe.com';
-    private array $urls = [
-        'token' => null,
-        'request' => '/v1/checkout/sessions',
-        'query' => '/v1/checkout/sessions/:orderId',
-    ];
-
-    public function __construct(private string $secretKey)
+    public function pay(): void
     {
-    }
-
-    public function tokenizer()
-    {
-        try {
-            if (!$this->secretKey) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid credentials');
-            }
-
-            $this->tokens = ['Bearer ', $this->secretKey];
-            return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
-        } catch (Exception $e) {
-            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
+        if (!$service = $this->init()) {
+            return;
         }
-    }
 
-    public function orderRequest($data, $urls)
-    {
-        try {
-            $headers = ['Authorization' => $this->tokens[0] . $this->tokens[1], 'Content-Type' => 'application/x-www-form-urlencoded'];
-
-            $url = $this->baseUrl . $this->urls['request'];
-
-            $client = Http::withHeaders($headers)
-                ->asForm()
-                ->post($url, [
-                    'line_items'  => [[
-                        'price_data' => ['currency' => $data['currency'] ?? 'usd', 'product_data' => ['name' => 'Product'], 'unit_amount_decimal' => $data['amount'] * 100],
-                        'quantity'   => 1,
-                    ]],
-                    'mode'        => "payment",
-                    'success_url' => $urls['success'],
-                    'cancel_url'  => $urls['cancel'],
-                ]);
-
-            if (!$client->successful()) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
-            }
-
-            $client = $client->json();
-            if (!array_key_exists('url', $client)) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Something went wrong in stripe transactions', $client);
-            }
-
-            $payload = ['response' => $client, 'url' => $client['url']];
-
-            return $this->leafwrapResponse(false, true, 'success', 201, 'Stripe request added successfully...', $payload);
-        } catch (Exception $e) {
-            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
+        $this->setFeedback($service->orderRequest(['currency' => BaseService::$currency, 'amount' => BaseService::$amount], BaseService::$redirectUrls));
+        if ($this->feedback()['isError']) {
+            return;
         }
+
+        $this->paymentActivity(['request_payload' => $this->feedback()['data']]);
     }
 
-    public function orderQuery($orderId)
+    private function init(): ?Stripe
     {
-        try {
-            $headers = ['Authorization' => $this->tokens[0] . $this->tokens[1]];
+        $service = new Stripe(BaseService::$paymentGateway->credentials['secret_key'] ?? '');
 
-            $url = $this->baseUrl . str_replace(':orderId', $orderId, $this->urls['query']);
+        $this->setFeedback($service->tokenizer());
+        if ($this->feedback()['isError']) {
+            return null;
+        }
 
-            $client = Http::withHeaders($headers)->get($url);
+        return $service;
+    }
 
-            if (!$client->successful()) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
-            }
+    public function check(): void
+    {
+        if (!$service = $this->init()) {
+            return;
+        }
 
-            return $this->leafwrapResponse(false, true, 'success', 200, 'Stripe payment fetch successfully...', $client->json());
-        } catch (Exception $e) {
-            return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
+        $this->setFeedback($service->orderQuery(BaseService::$orderId));
+    }
+
+    public function execute(): void
+    {
+        if (!$service = $this->init()) {
+            return;
+        }
+
+        $this->setFeedback($service->orderQuery(BaseService::$orderId));
+        if ($this->feedback()['isError']) {
+            return;
+        }
+
+        $payload = $this->feedback();
+        if ($payload['isSuccess'] && $payload['data'] && array_key_exists('status', $payload['data']) && $payload['data']['status'] === 'complete') {
+            $this->paymentActivity(['status' => 'completed', 'response_payload' => $this->feedback()['data']]);
         }
     }
 }
