@@ -11,7 +11,7 @@ class RazorPayAction extends BaseService
     {
         $service = new RazorPayService(BaseService::$paymentGateway->credentials['app_key'] ?? '', BaseService::$paymentGateway->credentials['secret_key'] ?? '');
 
-        $this->setPaymentResponse($service->tokenBuilder());
+        $this->setPaymentResponse($service->tokenizer());
         if ($this->getPaymentResponse()['isError']) {
             return;
         }
@@ -25,7 +25,7 @@ class RazorPayAction extends BaseService
             return;
         }
 
-        $this->setPaymentResponse($service->paymentRequest(['currency' => BaseService::$currency, 'amount' => BaseService::$amount], BaseService::$redirectUrls));
+        $this->setPaymentResponse($service->orderRequest(['currency' => BaseService::$currency, 'amount' => BaseService::$amount], BaseService::$redirectUrls));
         if ($this->getPaymentResponse()['isError']) {
             return;
         }
@@ -33,13 +33,25 @@ class RazorPayAction extends BaseService
         $this->paymentActivity(['request_payload' => $this->getPaymentResponse()['data']]);
     }
 
-    public function orderCheck()
+    public function check()
     {
         if (!$service = $this->init()) {
             return;
         }
 
-        $this->setPaymentResponse($service->paymentValidate(BaseService::$orderId));
+        $this->setPaymentResponse($service->orderQuery(BaseService::$orderId));
+        if ($this->getPaymentResponse()['isError']) {
+            return;
+        }
+    }
+
+    public function execute()
+    {
+        if (!$service = $this->init()) {
+            return;
+        }
+
+        $this->setPaymentResponse($service->orderQuery(BaseService::$orderId));
         if ($this->getPaymentResponse()['isError']) {
             return;
         }

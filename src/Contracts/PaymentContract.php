@@ -5,11 +5,14 @@ namespace Leafwrap\PaymentDeals\Contracts;
 interface PaymentContract
 {
     // TODO: Authorization token builder
-    public function tokenBuilder();
+    public function tokenizer();
 
     // TODO: Order session request
-    public function paymentRequest($data, $urls);
+    public function orderRequest($data, $urls);
 
-    // TODO: Already order payment validation
-    public function paymentValidate($orderId);
+    // TODO: Already order payment query
+    public function orderQuery($orderId);
+
+    // // TODO: Already order payment execute
+    // public function orderExecute($orderId);
 }

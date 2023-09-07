@@ -17,7 +17,7 @@ class BkashAction extends BaseService
             BaseService::$paymentGateway->credentials['sandbox'] ?? true
         );
 
-        $this->setPaymentResponse($service->tokenBuilder());
+        $this->setPaymentResponse($service->tokenizer());
         if ($this->getPaymentResponse()['isError']) {
             return;
         }
@@ -31,7 +31,7 @@ class BkashAction extends BaseService
             return;
         }
 
-        $this->setPaymentResponse($service->paymentRequest(['currency' => BaseService::$currency, 'amount' => BaseService::$amount], BaseService::$redirectUrls));
+        $this->setPaymentResponse($service->orderRequest(['currency' => BaseService::$currency, 'amount' => BaseService::$amount, 'transaction_id' => BaseService::$transactionId], BaseService::$redirectUrls));
         if ($this->getPaymentResponse()['isError']) {
             return;
         }
@@ -39,23 +39,31 @@ class BkashAction extends BaseService
         $this->paymentActivity(['request_payload' => $this->getPaymentResponse()['data']]);
     }
 
-    public function orderCheck()
+    public function check()
     {
         if (!$service = $this->init()) {
             return;
         }
 
-        $this->setPaymentResponse($service->paymentValidate(BaseService::$orderId));
+        $this->setPaymentResponse($service->orderQuery(BaseService::$orderId));
+        if ($this->getPaymentResponse()['isError']) {
+            return;
+        }
+    }
+
+    public function execute()
+    {
+        if (!$service = $this->init()) {
+            return;
+        }
+
+        $this->setPaymentResponse($service->orderExecute(BaseService::$orderId));
         if ($this->getPaymentResponse()['isError']) {
             return;
         }
 
         $payload = $this->getPaymentResponse();
-        if (
-            $payload['isSuccess'] && $payload['data'] &&
-            array_key_exists('transactionStatus', $payload['data']) && $payload['data']['transactionStatus'] === 'Completed' &&
-            array_key_exists('verificationStatus', $payload['data']) && $payload['data']['verificationStatus'] === 'Complete'
-        ) {
+        if ($payload['isSuccess'] && $payload['data'] && array_key_exists('transactionStatus', $payload['data']) && $payload['data']['transactionStatus'] === 'Completed') {
             $this->paymentActivity(['status' => 'completed', 'response_payload' => $this->getPaymentResponse()['data']]);
         }
     }

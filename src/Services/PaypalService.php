@@ -40,7 +40,7 @@ class PaypalService implements PaymentContract
         };
     }
 
-    public function tokenBuilder()
+    public function tokenizer()
     {
         try {
             if (!$this->appKey || !$this->secretKey) {
@@ -74,13 +74,13 @@ class PaypalService implements PaymentContract
                 $this->tokens = [$client['token_type'] . ' ', $client['access_token']];
             });
 
-            return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
+            return $this->leafwrapResponse(false, true, 'success', 200, 'Paypal token setup successfully', $this->tokens);
         } catch (Exception $e) {
             return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
-    public function paymentRequest($data, $urls)
+    public function orderRequest($data, $urls)
     {
         try {
             $headers = [
@@ -122,7 +122,7 @@ class PaypalService implements PaymentContract
         }
     }
 
-    public function paymentValidate($orderId)
+    public function orderQuery($orderId)
     {
         try {
             $headers = [
@@ -139,15 +139,13 @@ class PaypalService implements PaymentContract
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
             }
 
-            $client = $client->json();
-
-            return $this->paymentConfirm($client, $orderId);
+            return $this->leafwrapResponse(false, true, 'success', 200, 'Paypal payment fetch successfully', $client->json());
         } catch (Exception $e) {
             return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
-    private function paymentConfirm($data, $orderId)
+    public function orderExecute($orderId)
     {
         try {
             $headers = [
@@ -157,24 +155,9 @@ class PaypalService implements PaymentContract
                 'Authorization'     => $this->tokens[0] . $this->tokens[1],
             ];
 
-            if (!array_key_exists('status', $data)) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $data);
-            } else {
-                if ($data['status'] === 'PAYER_ACTION_REQUIRED') {
-                    return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment requires payment. Please pay first...', $data);
-                } elseif ($data['status'] === 'COMPLETED') {
-                    return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment already paid...', $data);
-                }
-            }
-
             $url = $this->baseUrl . str_replace(':orderId', $orderId, $this->urls['execute']);
 
-            $client = Http::withHeaders($headers)->post($url, [
-                'application_context' => [
-                    'return_url' => '',
-                    'cancel_url' => '',
-                ],
-            ]);
+            $client = Http::withHeaders($headers)->post($url, ['application_context' => ['return_url' => '', 'cancel_url' => '']]);
 
             if (!$client->successful()) {
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
@@ -182,7 +165,7 @@ class PaypalService implements PaymentContract
 
             Cache::forget('paypal_id');
 
-            return $this->leafwrapResponse(false, true, 'success', 200, 'Paypal order validated successfully...', $client->json());
+            return $this->leafwrapResponse(false, true, 'success', 201, 'Paypal payment execute successfully...', $client->json());
         } catch (Exception $e) {
             return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }

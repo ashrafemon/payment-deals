@@ -23,9 +23,13 @@ class StripeService implements PaymentContract
     {
     }
 
-    public function tokenBuilder()
+    public function tokenizer()
     {
         try {
+            if (!$this->secretKey) {
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid credentials');
+            }
+
             $this->tokens = ['Bearer ', $this->secretKey];
             return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
         } catch (Exception $e) {
@@ -33,7 +37,7 @@ class StripeService implements PaymentContract
         }
     }
 
-    public function paymentRequest($data, $urls)
+    public function orderRequest($data, $urls)
     {
         try {
             $headers = ['Authorization' => $this->tokens[0] . $this->tokens[1], 'Content-Type' => 'application/x-www-form-urlencoded'];
@@ -69,7 +73,7 @@ class StripeService implements PaymentContract
         }
     }
 
-    public function paymentValidate($orderId)
+    public function orderQuery($orderId)
     {
         try {
             $headers = ['Authorization' => $this->tokens[0] . $this->tokens[1]];
@@ -82,7 +86,7 @@ class StripeService implements PaymentContract
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
             }
 
-            return $this->leafwrapResponse(false, true, 'success', 201, 'Stripe order validated successfully...', $client->json());
+            return $this->leafwrapResponse(false, true, 'success', 200, 'Stripe payment fetch successfully...', $client->json());
         } catch (Exception $e) {
             return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }

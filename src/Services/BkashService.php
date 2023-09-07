@@ -39,7 +39,7 @@ class BkashService implements PaymentContract
         };
     }
 
-    public function tokenBuilder()
+    public function tokenizer()
     {
         try {
             if (!$this->appKey || !$this->secretKey || !$this->username || !$this->password) {
@@ -77,7 +77,7 @@ class BkashService implements PaymentContract
         }
     }
 
-    public function paymentRequest($data, $urls)
+    public function orderRequest($data, $urls)
     {
         try {
             $headers = [
@@ -101,7 +101,7 @@ class BkashService implements PaymentContract
             ]);
 
             if (!$client->successful()) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Bkash payment request problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'bKash payment request problem...', $client->json());
             }
 
             $client = $client->json();
@@ -111,13 +111,13 @@ class BkashService implements PaymentContract
 
             $payload = ['response' => $client, 'url' => $client['bkashURL']];
 
-            return $this->leafwrapResponse(false, true, 'success', 201, 'Bkash request added successfully...', $payload);
+            return $this->leafwrapResponse(false, true, 'success', 201, 'bKash request added successfully...', $payload);
         } catch (Exception $e) {
             return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
-    public function paymentValidate($orderId)
+    public function orderQuery($orderId)
     {
         try {
             $headers = [
@@ -132,22 +132,22 @@ class BkashService implements PaymentContract
             $client = Http::withHeaders($headers)->post($url, ['paymentID' => $orderId]);
 
             if (!$client->successful()) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'bKash payment request problem...', $client->json());
             }
 
             $client = $client->json();
 
             if (!array_key_exists('statusCode', $client) || !array_key_exists('statusMessage', $client)) {
-                $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());;
+                return $this->leafwrapResponse(true, false, 'error', 400, 'bKash payment request problem...', $client->json());
             }
 
-            return $this->paymentConfirm($client, $orderId);
+            return $this->leafwrapResponse(false, true, 'success', 200, 'bKash payment fetch successfully', $client->json());
         } catch (Exception $e) {
             return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
     }
 
-    private function paymentConfirm($data, $orderId)
+    public function orderExecute($orderId)
     {
         try {
             $headers = [
@@ -157,19 +157,15 @@ class BkashService implements PaymentContract
                 'X-APP-Key'     => $this->appKey,
             ];
 
-            if (!array_key_exists('statusCode', $data) || !array_key_exists('statusMessage', $data)) {
-                $this->leafwrapResponse(true, false, 'error', 400, 'Bkash payment request problem...', $data);;
-            }
-
             $url = $this->baseUrl . $this->urls['execute'];
 
             $client = Http::withHeaders($headers)->post($url, ['paymentID' => $orderId]);
 
             if (!$client->successful()) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Bkash payment request problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'bKash payment request problem...', $client->json());
             }
 
-            return $this->leafwrapResponse(false, true, 'success', 200, 'Bkash order validated successfully...', $client->json());
+            return $this->leafwrapResponse(false, true, 'success', 201, 'bKash payment execute successfully...', $client->json());
         } catch (Exception $e) {
             return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }

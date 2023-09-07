@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('gateway')->nullable();
             $table->json('credentials')->nullable();
             $table->json('additional')->nullable();
-            $table->boolean('status')->nullable()->default(0);
+            $table->boolean('status')->nullable()->default(1);
             $table->timestamps();
         });
     }

@@ -16,16 +16,20 @@ class RazorPayService implements PaymentContract
     private array $urls = [
         'token' => null,
         'request' => '/v1/payment_links',
-        'query' => 'v1/payment_links/:orderId',
+        'query' => '/v1/payment_links/:orderId',
     ];
 
     public function __construct(private string $appKey, private string $secretKey)
     {
     }
 
-    public function tokenBuilder()
+    public function tokenizer()
     {
         try {
+            if (!$this->appKey || !$this->secretKey) {
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Please provide a valid credentials');
+            }
+
             $this->tokens = [$this->appKey, $this->secretKey];
             return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
         } catch (Exception $e) {
@@ -33,7 +37,7 @@ class RazorPayService implements PaymentContract
         }
     }
 
-    public function paymentRequest($data, $urls)
+    public function orderRequest($data, $urls)
     {
         try {
             $headers = ["Content-Type" => "application/json"];
@@ -65,7 +69,7 @@ class RazorPayService implements PaymentContract
             }
 
             $client = $client->json();
-            if (!array_key_exists('url', $client)) {
+            if (!array_key_exists('short_url', $client)) {
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Something went wrong in razorpay transactions', $client);
             }
 
@@ -77,7 +81,7 @@ class RazorPayService implements PaymentContract
         }
     }
 
-    public function paymentValidate($orderId)
+    public function orderQuery($orderId)
     {
         try {
             $headers = ["Content-Type" => 'application/json'];
@@ -90,7 +94,7 @@ class RazorPayService implements PaymentContract
                 return $this->leafwrapResponse(true, false, 'error', 400, 'RazorPay payment request problem...', $client->json());
             }
 
-            return $this->leafwrapResponse(false, true, 'success', 201, 'RazorPay order validated successfully...', $client->json());
+            return $this->leafwrapResponse(false, true, 'success', 201, 'RazorPay payment fetch successfully', $client->json());
         } catch (Exception $e) {
             return $this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage());
         }
