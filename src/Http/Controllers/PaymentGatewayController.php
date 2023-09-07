@@ -22,7 +22,7 @@ class PaymentGatewayController extends Controller
             $query = PaymentGateway::query();
 
             if (request()->has('status') && request()->input('status')) {
-                $condition['status'] = request()->input('status');
+                $condition['status'] = (int) request()->input('status');
             }
 
             if (request()->has('type') && request()->input('type')) {
