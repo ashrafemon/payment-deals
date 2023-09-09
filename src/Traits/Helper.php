@@ -46,4 +46,25 @@ trait Helper
 
         return response(['status' => 'validate_error', 'statusCode' => 422, 'data' => $errors], 422);
     }
+
+    protected function currencyConverter($value, $currency): float
+    {
+        $amount = $value;
+        if (strtoupper($currency) !== 'usd') {
+            $headers = ["apikey" => 'D1MAzNp2oCqGWpwAmQH4xX7th8v0SOMF52IRt0HO'];
+            $client = Http::withHeaders($headers)->get('https://api.freecurrencyapi.com/v1/latest');
+
+            if ($client->successful()) {
+                $client = $client->json();
+
+                foreach ($client['data'] as $key => $item) {
+                    if ($key === strtoupper($currency)) {
+                        $amount = (float) ($amount / $item);
+                    }
+                }
+            }
+
+        }
+        return round($amount, 2);
+    }
 }

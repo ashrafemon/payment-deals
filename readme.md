@@ -1,4 +1,4 @@
-# Payment Deal Library: Empowering Seamless Online Payments with Laravel
+## Payment Deal Library: Empowering Seamless Online Payments with Laravel
 
 The Payment Deal Library is a powerful and versatile Laravel package designed to simplify and enhance online payment processing. Whether you're a business owner, developer, or entrepreneur, this library provides you with a comprehensive toolkit for integrating popular payment gateways seamlessly into your web applications.
 
