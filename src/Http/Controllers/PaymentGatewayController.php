@@ -15,8 +15,8 @@ class PaymentGatewayController extends Controller
     public function index()
     {
         try {
-            $offset = request()->input('offset') ?? 15;
-            $fields = ['id', 'type', 'credentials', 'additional', 'status'];
+            $offset    = request()->input('offset') ?? 15;
+            $fields    = ['id', 'type', 'gateway', 'credentials', 'additional', 'status'];
             $condition = [];
 
             $query = PaymentGateway::query();
@@ -29,7 +29,7 @@ class PaymentGatewayController extends Controller
                 $condition['type'] = request()->input('type');
             }
 
-            if (request()->has('get_all') && (int)request()->input('get_all') === 1) {
+            if (request()->has('get_all') && (int) request()->input('get_all') === 1) {
                 $query = $query->select($fields)->where($condition)->get();
             } else {
                 $query = $this->leafwrapPaginate($query->select($fields)->where($condition)->latest()->paginate($offset)->toArray());
@@ -55,7 +55,7 @@ class PaymentGatewayController extends Controller
     public function show($id)
     {
         try {
-            $fields = ['id', 'type', 'credentials', 'status'];
+            $fields    = ['id', 'type', 'credentials', 'status'];
             $condition = ['id' => $id];
 
             if (!$query = PaymentGateway::query()->select($fields)->where($condition)->first()) {
