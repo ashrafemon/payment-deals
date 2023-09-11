@@ -20,21 +20,21 @@ class BaseService
     static array $planData;
     static mixed $paymentGateway;
     static array $paymentFeedback;
-    static array $redirectUrls = ['success' => '', 'cancel' => '',];
+    static array $redirectUrls = ['success' => '', 'cancel' => ''];
 
     protected function setRedirectionUrls(): void
     {
-        $gateway = BaseService::$gateway;
+        $gateway       = BaseService::$gateway;
         $transactionId = BaseService::$transactionId;
 
-        BaseService::$redirectUrls = ['success' => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=success", 'cancel' => request()?->getSchemeAndHttpHost() . "/payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=cancel",];
+        BaseService::$redirectUrls = ['success' => request()?->getSchemeAndHttpHost() . "/online-payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=success", 'cancel' => request()?->getSchemeAndHttpHost() . "/online-payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=cancel"];
     }
 
     protected function paymentActivity($data): void
     {
         try {
             if (!$exist = PaymentTransaction::query()->where(['transaction_id' => BaseService::$transactionId])->first()) {
-                $payload = ['transaction_id' => BaseService::$transactionId, 'user_id' => BaseService::$userId, 'gateway' => BaseService::$gateway, 'amount' => BaseService::$amount, 'plan_data' => BaseService::$planData,];
+                $payload = ['transaction_id' => BaseService::$transactionId, 'user_id' => BaseService::$userId, 'gateway' => BaseService::$gateway, 'amount' => BaseService::$amount, 'plan_data' => BaseService::$planData];
                 PaymentTransaction::query()->create(array_merge($payload, $data));
                 return;
             }

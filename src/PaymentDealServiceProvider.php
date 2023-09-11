@@ -9,7 +9,8 @@ class PaymentDealServiceProvider extends ServiceProvider
 {
     public function boot(Kernel $kernel)
     {
-        $this->loadRoutesFrom(__DIR__ . '/routes/api.php');
+        $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
+        $this->loadViewsFrom(__DIR__ . '/views', 'payment-deal');
         $this->loadMigrationsFrom(__DIR__ . '/migrations');
     }
 
