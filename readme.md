@@ -34,7 +34,7 @@ First, install the PaymentDeal package using the Composer package manager:
 composer require leafwrap/payment-deals
 ```
 
-#### Database Migrations 
+#### Database Migrations
 
 PaymentDeal service provider registers its own database migration directory, so remember to migrate your database after installing the package.
 
@@ -60,83 +60,57 @@ use Leafwrap\PaymentDeals\Facades\PaymentDeal;
 Route::post('payment', function () {
     // Fetch your pricing plan
     $plan = PricingPlan::where(['id' => 1])->first()->toArray();
-    
-    /* 
+
+    /*
       Initialize required value to create a payment request
-      Paramters: 
+      Parameters:
         1. Pricing Package // an array
         2. Amount // float or int
         3. User ID // string
         4. Gateway Name // string (ex: paypal, stripe, razorpay, bkash)
         5. Currency // string (ex: usd, inr, bdt)
     */
-  
+
     PaymentDeal::init($plan, $amount, $userId, $gateway, $currency);
-    
+
     // Pay provides you to request a payment
     PaymentDeal::pay();
-    
+
     // Feedback provides you payment url link & payment response
     return PaymentDeal::feedback();
 });
 ```
 
-- Execute your payment
+- Query your payment (Optional)
 
 ```bash
 use Leafwrap\PaymentDeals\Facades\PaymentDeal;
 
 Route::post('payment-query', function () {
-    $transactionId = 'trans-{someValue}' // which you get from redirect url params
-    
-    // Use execute to confirm payment
-    PaymentDeal::execute($transactionId);
-    
-    // Feedback provides you payment response
-    return PaymentDeal::feedback();
-});
-```
+    $transactionId = 'TRANS-XXXXXXXXXXXXX'
 
-- Query your payment
-
-```bash
-use Leafwrap\PaymentDeals\Facades\PaymentDeal;
-
-Route::post('payment-query', function () {
-    $transactionId = 'trans-{someValue}' // which you get from redirect url params
-    
     // Query for payment status
     PaymentDeal::query($transactionId);
-    
+
     // Feedback provides you payment response
     return PaymentDeal::feedback();
 });
 ```
 
-- Assign to your plan
+- Assign to your plan (Required)
 
 ```bash
 use Leafwrap\PaymentDeals\Models\PaymentTransaction;
 
-Route::post('assign-plan', function () {
-    $transactionId = 'trans-{someValue}' // which you get from redirect url params
-    
+Route::post('/api/v1/assign-plan', function () {
+    $transactionId = request()->input('transaction_id');
+
     if($payment = PaymentTransaction::where(['transaction_id' => $transactionId])->first()){
-        /* 
-          PaymentTransaction have some data attribute
-          id, 
-          transaction_id, 
-          user_id, 
-          gateway, 
-          amount, 
-          plan_data, 
-          request_payload, 
-          response_payload, 
-          status 
-        */      
+        // PaymentTransaction have some data attribute
+        // id, transaction_id, user_id, gateway, amount, plan_data, request_payload, response_payload, status
 
         if($payment->status === 'completed'){
-            // Assign package code (your business logic)
+            // Assign code (your business logic)
         }
     }
 });
