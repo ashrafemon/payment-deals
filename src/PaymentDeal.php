@@ -12,12 +12,12 @@ class PaymentDeal extends BaseService
 {
     public function init($planData, $amount, $userId, $gateway, $currency = 'usd'): void
     {
-        PaymentDeal::$planData = $planData;
-        BaseService::$currency = $currency;
-        BaseService::$amount = $amount;
-        BaseService::$userId = $userId;
-        BaseService::$gateway = $gateway;
-        BaseService::$transactionId = strtolower(uniqid('trans-'));
+        PaymentDeal::$planData      = $planData;
+        BaseService::$currency      = $currency;
+        BaseService::$amount        = $amount;
+        BaseService::$userId        = $userId;
+        BaseService::$gateway       = $gateway;
+        BaseService::$transactionId = strtoupper(uniqid('trans-'));
 
         $this->setFeedback($this->verifyCredentials());
         if ($this->feedback()['isError']) {
