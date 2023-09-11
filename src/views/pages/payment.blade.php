@@ -84,7 +84,7 @@
                             this.loading = false;
 
                             if (res.status !== 'success') {
-                                this.title = 'Payment Failed';
+                                this.title = res.message;
                                 this.completed = false;
                                 return;
                             }
