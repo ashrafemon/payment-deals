@@ -25,7 +25,8 @@
 
             <div x-cloack x-show="!loading">
                 <div class="text-center mb-10">
-                    <h6 class="text-3xl mb-6" :class="completed ? 'text-green-500' : 'text-red-500'" x-text="title"></h6>
+                    <h6 class="text-3xl mb-6" :class="completed ? 'text-green-500' : 'text-red-500'" x-text="title">
+                    </h6>
                     <div>
                         <template x-if="completed">
                             <iconify-icon icon="teenyicons:tick-circle-outline"
@@ -80,7 +81,7 @@
                                 }
                             })
                         .then(res => res.json())
-                        .then(res => {
+                        .then(async (res) => {
                             this.loading = false;
 
                             if (res.status !== 'success') {
@@ -91,6 +92,17 @@
 
                             this.title = 'Payment Successful';
                             this.completed = true;
+
+                            let ipnCall = await fetch(`${window.origin}/api/v1/assign-plan`, {
+                                method: "POST",
+                                headers: {
+                                    Accept: 'application/json',
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    transaction_id: this.transactionId
+                                })
+                            });
                         })
                         .catch(err => console.log(err))
                 }
