@@ -25,6 +25,10 @@ class PaymentGatewayController extends Controller
                 $condition['status'] = (int) request()->input('status');
             }
 
+            if (request()->has('gateway') && request()->input('gateway')) {
+                $condition['gateway'] = (int) request()->input('gateway');
+            }
+
             if (request()->has('type') && request()->input('type')) {
                 $condition['type'] = request()->input('type');
             }
