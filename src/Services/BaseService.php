@@ -88,14 +88,13 @@ class BaseService
     protected function verifyCurrency()
     {
         if (!in_array(self::$currency, self::$allowedCurrencies)) {
-            $this->setFeedback($this->leafwrapResponse(true, false, 'error', 400, strtoupper(self::$currency) . ' currency is not allowed'));
-            return;
+            return $this->leafwrapResponse(true, false, 'error', 400, strtoupper(self::$currency) . ' currency is not allowed');
         }
 
         if (in_array(BaseService::$gateway, ['bkash', 'rocket', 'sslcommerz', 'nagad'])) {
             BaseService::$amount = match (BaseService::$currency) {
                 'usd' => BaseService::$baseAmount > 0 ? BaseService::$amount * BaseService::$baseAmount : BaseService::$amount,
-                'bdt' => BaseService::$baseAmount > 0 ? BaseService::$amount / BaseService::$baseAmount : BaseService::$amount
+                'bdt' => BaseService::$baseAmount > 0 ? round(BaseService::$amount / BaseService::$baseAmount, 0) : BaseService::$amount
             };
         } else {
             BaseService::$amount = match (BaseService::$currency) {

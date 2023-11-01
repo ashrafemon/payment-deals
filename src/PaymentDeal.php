@@ -18,7 +18,7 @@ class PaymentDeal extends BaseService
         BaseService::$userId        = $userId;
         BaseService::$gateway       = $gateway;
         BaseService::$baseAmount    = $baseAmount;
-        BaseService::$transactionId = strtoupper(uniqid('trans-'));
+        BaseService::$transactionId = strtoupper(uniqid('trans_'));
 
         $this->setFeedback($this->verifyCredentials());
         if ($this->feedback()['isError']) {

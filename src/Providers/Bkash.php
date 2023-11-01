@@ -14,7 +14,7 @@ class Bkash implements ProviderContract
     private string $baseUrl;
     private string $requestId;
     private array $tokens;
-    private array $urls = ['token' => '/v1.2.0-beta/tokenized/checkout/token/grant', 'request' => '/v1.2.0-beta/tokenized/checkout/create', 'query' => '/v1.2.0-beta/tokenized/checkout/payment/status', 'execute' => '/v1.2.0-beta/tokenized/checkout/execute',];
+    private array $urls = ['token' => '/v1.2.0-beta/tokenized/checkout/token/grant', 'request' => '/v1.2.0-beta/tokenized/checkout/create', 'query' => '/v1.2.0-beta/tokenized/checkout/payment/status', 'execute' => '/v1.2.0-beta/tokenized/checkout/execute'];
 
     public function __construct(private string $appKey, private string $secretKey, private string $username, private string $password, private bool $sandbox)
     {
@@ -38,23 +38,21 @@ class Bkash implements ProviderContract
 
             $url = $this->baseUrl . $this->urls['token'];
 
-            cache()->remember('bKash_token', now()->addHour(), function () use ($url) {
-                $headers = ['accept' => 'application/json', 'Content-Type' => 'application/json', 'username' => $this->username, 'password' => $this->password,];
+            $headers = ['accept' => 'application/json', 'Content-Type' => 'application/json', 'username' => $this->username, 'password' => $this->password];
 
-                $client = Http::withHeaders($headers)->post($url, ['app_key' => $this->appKey, 'app_secret' => $this->secretKey]);
+            $client = Http::withHeaders($headers)->post($url, ['app_key' => $this->appKey, 'app_secret' => $this->secretKey]);
 
-                if (!$client->successful()) {
-                    return $this->leafwrapResponse(true, false, 'error', 400, 'bKash credential configuration problem...', $client->json());
-                }
+            if (!$client->successful()) {
+                return $this->leafwrapResponse(true, false, 'error', 400, 'bKash credential configuration problem...', $client->json());
+            }
 
-                $client = $client->json();
+            $client = $client->json();
 
-                if (!array_key_exists('id_token', $client)) {
-                    return $this->leafwrapResponse(true, false, 'error', 400, 'bKash configuration problem...', $client->json());
-                }
+            if (!array_key_exists('id_token', $client)) {
+                return $this->leafwrapResponse(true, false, 'error', 400, 'bKash configuration problem...', $client->json());
+            }
 
-                $this->tokens = ['Bearer ', $client['id_token']];
-            });
+            $this->tokens = ['Bearer ', $client['id_token']];
 
             return $this->leafwrapResponse(false, true, 'success', 200, 'Authorization token setup successfully', $this->tokens);
         } catch (Exception $e) {
@@ -65,11 +63,11 @@ class Bkash implements ProviderContract
     public function orderRequest($data, $urls): array
     {
         try {
-            $headers = ['Accept' => 'application/json', 'Content-Type' => 'application/json', 'Authorization' => $this->tokens[0] . $this->tokens[1], 'X-APP-Key' => $this->appKey,];
+            $headers = ['Accept' => 'application/json', 'Content-Type' => 'application/json', 'Authorization' => $this->tokens[0] . $this->tokens[1], 'X-APP-Key' => $this->appKey];
 
             $url = $this->baseUrl . $this->urls['request'];
 
-            $client = Http::withHeaders($headers)->post($url, ['mode' => '0011', 'callbackURL' => $urls['success'], 'payerReference' => uniqid(), 'agreementID' => uniqid(), 'amount' => (string)$data['amount'], 'currency' => strtoupper($data['currency']) ?? 'BDT', 'intent' => 'sale', 'merchantInvoiceNumber' => $data['transaction_id'],]);
+            $client = Http::withHeaders($headers)->post($url, ['mode' => '0011', 'callbackURL' => $urls['success'], 'payerReference' => uniqid(), 'agreementID' => uniqid(), 'amount' => (string) $data['amount'], 'currency' => strtoupper($data['currency']) ?? 'BDT', 'intent' => 'sale', 'merchantInvoiceNumber' => $data['transaction_id']]);
 
             if (!$client->successful()) {
                 return $this->leafwrapResponse(true, false, 'error', 400, 'bKash payment request problem...', $client->json());
@@ -91,7 +89,7 @@ class Bkash implements ProviderContract
     public function orderQuery($orderId): array
     {
         try {
-            $headers = ['Accept' => 'application/json', 'Content-Type' => 'application/json', 'Authorization' => $this->tokens[0] . $this->tokens[1], 'X-APP-Key' => $this->appKey,];
+            $headers = ['Accept' => 'application/json', 'Content-Type' => 'application/json', 'Authorization' => $this->tokens[0] . $this->tokens[1], 'X-APP-Key' => $this->appKey];
 
             $url = $this->baseUrl . $this->urls['query'];
 
@@ -116,7 +114,7 @@ class Bkash implements ProviderContract
     public function orderExecute($orderId): array
     {
         try {
-            $headers = ['Accept' => 'application/json', 'Content-Type' => 'application/json', 'Authorization' => $this->tokens[0] . $this->tokens[1], 'X-APP-Key' => $this->appKey,];
+            $headers = ['Accept' => 'application/json', 'Content-Type' => 'application/json', 'Authorization' => $this->tokens[0] . $this->tokens[1], 'X-APP-Key' => $this->appKey];
 
             $url = $this->baseUrl . $this->urls['execute'];
 
