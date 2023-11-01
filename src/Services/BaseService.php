@@ -20,7 +20,9 @@ class BaseService
     static array $planData;
     static mixed $paymentGateway;
     static array $paymentFeedback;
-    static array $redirectUrls = ['success' => '', 'cancel' => ''];
+    static array $redirectUrls      = ['success' => '', 'cancel' => ''];
+    static array $allowedCurrencies = ['usd', 'bdt'];
+    static float $baseAmount        = 0;
 
     protected function setRedirectionUrls(): void
     {
@@ -81,6 +83,28 @@ class BaseService
             $this->setFeedback($this->leafwrapResponse(true, false, 'serverError', 500, $e->getMessage()));
             return;
         }
+    }
+
+    protected function verifyCurrency()
+    {
+        if (!in_array(self::$currency, self::$allowedCurrencies)) {
+            $this->setFeedback($this->leafwrapResponse(true, false, 'error', 400, strtoupper(self::$currency) . ' currency is not allowed'));
+            return;
+        }
+
+        if (in_array(BaseService::$gateway, ['bkash', 'rocket', 'sslcommerz', 'nagad'])) {
+            BaseService::$amount = match (BaseService::$currency) {
+                'usd' => BaseService::$baseAmount > 0 ? BaseService::$amount * BaseService::$baseAmount : BaseService::$amount,
+                'bdt' => BaseService::$baseAmount > 0 ? BaseService::$amount / BaseService::$baseAmount : BaseService::$amount
+            };
+        } else {
+            BaseService::$amount = match (BaseService::$currency) {
+                'usd' => BaseService::$amount,
+                'bdt' => BaseService::$baseAmount > 0 ? BaseService::$amount / BaseService::$baseAmount : BaseService::$amount
+            };
+        }
+
+        return $this->leafwrapResponse(false, true, 'success', 200, 'Provided currency is allowed');
     }
 
     protected function verifyCredentials(): array

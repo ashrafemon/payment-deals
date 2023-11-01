@@ -10,16 +10,22 @@ use Leafwrap\PaymentDeals\Services\StripeService;
 
 class PaymentDeal extends BaseService
 {
-    public function init($planData, $amount, $userId, $gateway, $currency = 'usd'): void
+    public function init($planData, $amount, $userId, $gateway, $currency = 'usd', $baseAmount = 0): void
     {
         PaymentDeal::$planData      = $planData;
-        BaseService::$currency      = $currency;
+        BaseService::$currency      = strtolower($currency);
         BaseService::$amount        = $amount;
         BaseService::$userId        = $userId;
         BaseService::$gateway       = $gateway;
+        BaseService::$baseAmount    = $baseAmount;
         BaseService::$transactionId = strtoupper(uniqid('trans-'));
 
         $this->setFeedback($this->verifyCredentials());
+        if ($this->feedback()['isError']) {
+            return;
+        }
+
+        $this->setFeedback($this->verifyCurrency());
         if ($this->feedback()['isError']) {
             return;
         }
