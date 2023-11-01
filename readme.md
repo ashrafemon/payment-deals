@@ -69,6 +69,7 @@ Route::post('payment', function () {
         3. User ID // string
         4. Gateway Name // string (ex: paypal, stripe, razorpay, bkash)
         5. Currency // string (ex: usd, inr, bdt)
+        6. Base Amount // float
     */
 
     PaymentDeal::init($plan, $amount, $userId, $gateway, $currency);
