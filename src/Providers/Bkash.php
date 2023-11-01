@@ -49,7 +49,7 @@ class Bkash implements ProviderContract
             $client = $client->json();
 
             if (!array_key_exists('id_token', $client)) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'bKash configuration problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'bKash configuration problem...', $client);
             }
 
             $this->tokens = ['Bearer ', $client['id_token']];

@@ -55,7 +55,7 @@ class Paypal implements ProviderContract
             $client = $client->json();
 
             if (!array_key_exists('token_type', $client) || !array_key_exists('access_token', $client)) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal configuration problem...', $client->json());
+                return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal configuration problem...', $client);
             }
 
             $this->tokens = [$client['token_type'] . ' ', $client['access_token']];

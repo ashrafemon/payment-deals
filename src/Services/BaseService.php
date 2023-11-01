@@ -93,8 +93,8 @@ class BaseService
 
         if (in_array(BaseService::$gateway, ['bkash', 'rocket', 'sslcommerz', 'nagad'])) {
             BaseService::$amount = match (BaseService::$currency) {
-                'usd' => BaseService::$baseAmount > 0 ? BaseService::$amount * BaseService::$baseAmount : BaseService::$amount,
-                'bdt' => BaseService::$baseAmount > 0 ? round(BaseService::$amount / BaseService::$baseAmount, 0) : BaseService::$amount
+                'bdt' => BaseService::$baseAmount > 0 ? BaseService::$amount * BaseService::$baseAmount : BaseService::$amount,
+                'usd' => BaseService::$baseAmount > 0 ? round(BaseService::$amount / BaseService::$baseAmount, 0) : BaseService::$amount
             };
         } else {
             BaseService::$amount = match (BaseService::$currency) {
