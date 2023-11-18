@@ -21,7 +21,7 @@ class BaseService
     static mixed $paymentGateway;
     static array $paymentFeedback;
     static array $redirectUrls      = ['success' => '', 'cancel' => ''];
-    static array $allowedCurrencies = ['usd', 'bdt'];
+    static array $allowedCurrencies = ['usd', 'bdt', 'inr'];
     static float $baseAmount        = 0;
 
     protected function setRedirectionUrls(): void
@@ -94,12 +94,15 @@ class BaseService
         if (in_array(BaseService::$gateway, ['bkash', 'rocket', 'sslcommerz', 'nagad'])) {
             BaseService::$amount = match (BaseService::$currency) {
                 'bdt' => BaseService::$baseAmount > 0 ? BaseService::$amount * BaseService::$baseAmount : BaseService::$amount,
-                'usd' => BaseService::$baseAmount > 0 ? round(BaseService::$amount / BaseService::$baseAmount, 0) : BaseService::$amount
+                'usd' => BaseService::$baseAmount > 0 ? round(BaseService::$amount / BaseService::$baseAmount, 0) : BaseService::$amount,
+                default => BaseService::$amount,
             };
         } else {
             BaseService::$amount = match (BaseService::$currency) {
                 'usd' => BaseService::$amount,
-                'bdt' => BaseService::$baseAmount > 0 ? BaseService::$amount / BaseService::$baseAmount : BaseService::$amount
+                'bdt' => BaseService::$baseAmount > 0 ? BaseService::$amount / BaseService::$baseAmount : BaseService::$amount,
+                'inr' => BaseService::$amount * 100,
+                default => BaseService::$amount,
             };
         }
 
