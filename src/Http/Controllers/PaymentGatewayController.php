@@ -59,7 +59,7 @@ class PaymentGatewayController extends Controller
     public function show($id)
     {
         try {
-            $fields    = ['id', 'type', 'credentials', 'status'];
+            $fields    = ['id', 'type', 'gateway', 'credentials', 'additional', 'status'];
             $condition = ['id' => $id];
 
             if (!$query = PaymentGateway::query()->select($fields)->where($condition)->first()) {
