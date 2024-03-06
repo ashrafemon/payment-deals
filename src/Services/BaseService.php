@@ -21,7 +21,7 @@ class BaseService
     static mixed $paymentGateway;
     static array $paymentFeedback;
     static array $redirectUrls      = ['success' => '', 'cancel' => ''];
-    static array $allowedCurrencies = ['usd', 'bdt', 'inr'];
+    static array $allowedCurrencies = ['usd', 'bdt', 'inr', 'ngn'];
     static float $baseAmount        = 0;
 
     protected function setRedirectionUrls(): void
