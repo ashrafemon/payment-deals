@@ -20,7 +20,7 @@ class BaseService
     static array $planData;
     static mixed $paymentGateway;
     static array $paymentFeedback;
-    static array $allowedGateways = ['paypal', 'stripe', 'razorpay', 'bkash'];
+    static array $allowedGateways = ['paypal', 'stripe', 'razorpay', 'bkash', 'paystack'];
     static array $redirectUrls    = ['success' => '', 'cancel' => ''];
     static float $exchangeAmount  = 0;
 
@@ -49,7 +49,7 @@ class BaseService
 
     protected function setFeedback($data): void
     {
-        BaseService::$paymentFeedback = $data;
+        self::$paymentFeedback = $data;
     }
 
     protected function verifyTransaction($transactionId): void
@@ -60,18 +60,24 @@ class BaseService
                 return;
             }
 
-            BaseService::$transactionId = $exist->transaction_id;
+            self::$transactionId = $exist->transaction_id;
 
             if (!in_array($exist->gateway, self::$allowedGateways)) {
                 $this->setFeedback($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction invalid gateway'));
                 return;
             }
 
-            BaseService::$gateway = $exist->gateway;
-            BaseService::$orderId = match ($exist->gateway) {
+            self::$gateway = $exist->gateway;
+            self::$orderId = match ($exist->gateway) {
                 'bkash' => $exist->request_payload['response']['paymentID'] ?? '',
+                'paystack' => $exist->request_payload['response']['data']['reference'] ?? '',
                 default => $exist->request_payload['response']['id'] ?? ''
             };
+
+            if (!self::$orderId) {
+                $this->setFeedback($this->leafwrapResponse(true, false, 'error', 404, 'Order id not found'));
+                return;
+            }
 
             $this->setFeedback($this->verifyCredentials());
             if ($this->feedback()['isError']) {
@@ -130,7 +136,7 @@ class BaseService
     protected function verifyCredentials(): array
     {
         try {
-            if (!BaseService::$paymentGateway = PaymentGateway::query()->where(['type' => 'online', 'gateway' => BaseService::$gateway])->first()) {
+            if (!self::$paymentGateway = PaymentGateway::query()->where(['type' => 'online', 'gateway' => self::$gateway])->first()) {
                 return $this->leafwrapResponse(true, false, 'error', 404, 'Payment gateway not found');
             }
 
@@ -142,7 +148,7 @@ class BaseService
 
     public function feedback(): array
     {
-        return BaseService::$paymentFeedback;
+        return self::$paymentFeedback;
     }
 
     private function amountCalculate()
