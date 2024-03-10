@@ -20,22 +20,23 @@ class BaseService
     static array $planData;
     static mixed $paymentGateway;
     static array $paymentFeedback;
-    static array $redirectUrls   = ['success' => '', 'cancel' => ''];
-    static float $exchangeAmount = 0;
+    static array $allowedGateways = ['paypal', 'stripe', 'razorpay', 'bkash'];
+    static array $redirectUrls    = ['success' => '', 'cancel' => ''];
+    static float $exchangeAmount  = 0;
 
     protected function setRedirectionUrls(): void
     {
-        $gateway       = BaseService::$gateway;
-        $transactionId = BaseService::$transactionId;
+        $gateway       = self::$gateway;
+        $transactionId = self::$transactionId;
 
-        BaseService::$redirectUrls = ['success' => request()?->getSchemeAndHttpHost() . "/online-payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=success", 'cancel' => request()?->getSchemeAndHttpHost() . "/online-payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=cancel"];
+        self::$redirectUrls = ['success' => request()?->getSchemeAndHttpHost() . "/online-payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=success", 'cancel' => request()?->getSchemeAndHttpHost() . "/online-payment-status?gateway={$gateway}&transaction_id={$transactionId}&status=cancel"];
     }
 
     protected function paymentActivity($data): void
     {
         try {
-            if (!$exist = PaymentTransaction::query()->where(['transaction_id' => BaseService::$transactionId])->first()) {
-                $payload = ['transaction_id' => BaseService::$transactionId, 'user_id' => BaseService::$userId, 'gateway' => BaseService::$gateway, 'amount' => BaseService::$amount, 'plan_data' => BaseService::$planData];
+            if (!$exist = PaymentTransaction::query()->where(['transaction_id' => self::$transactionId])->first()) {
+                $payload = ['transaction_id' => self::$transactionId, 'user_id' => self::$userId, 'gateway' => self::$gateway, 'amount' => self::$amount, 'plan_data' => self::$planData, 'currency' => self::$currency];
                 PaymentTransaction::query()->create(array_merge($payload, $data));
                 return;
             }
@@ -61,7 +62,7 @@ class BaseService
 
             BaseService::$transactionId = $exist->transaction_id;
 
-            if (!in_array($exist->gateway, ['paypal', 'stripe', 'razorpay', 'bkash'])) {
+            if (!in_array($exist->gateway, self::$allowedGateways)) {
                 $this->setFeedback($this->leafwrapResponse(true, false, 'error', 404, 'Payment transaction invalid gateway'));
                 return;
             }
