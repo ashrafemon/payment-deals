@@ -4,6 +4,7 @@ namespace Leafwrap\PaymentDeals\Providers;
 
 use Exception;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Leafwrap\PaymentDeals\Contracts\ProviderContract;
 use Leafwrap\PaymentDeals\Traits\Helper;
 
@@ -46,12 +47,19 @@ class PayStack implements ProviderContract
                 return $this->leafwrapResponse(true, false, 'error', 400, 'PayStack payment request problem...', $client->json());
             }
 
+            Log::info($client);
             $client = $client->json();
-            if (!array_key_exists('authorization_url', $client)) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Something went wrong in paystack transactions', $client);
+            if (!array_key_exists('status', $client) || !$client['status']) {
+                $message = $client['message'] ?? 'Something went wrong in paystack transactions';
+                return $this->leafwrapResponse(true, false, 'error', 400, $message, $client);
             }
 
-            $payload = ['response' => $client, 'url' => $client['authorization_url']];
+            if (!array_key_exists('data', $client) || !array_key_exists('authorization_url', $client['data'])) {
+                $message = $client['message'] ?? 'Something went wrong in paystack transactions';
+                return $this->leafwrapResponse(true, false, 'error', 400, $message, $client);
+            }
+
+            $payload = ['response' => $client, 'url' => $client['data']['authorization_url']];
 
             return $this->leafwrapResponse(false, true, 'success', 201, 'PayStack request added successfully...', $payload);
         } catch (Exception $e) {

@@ -75,7 +75,8 @@ class Bkash implements ProviderContract
 
             $client = $client->json();
             if (!array_key_exists('bkashURL', $client) || !array_key_exists('paymentID', $client)) {
-                return $this->leafwrapResponse(true, false, 'error', 400, 'Something went wrong in bkash transactions', $client);
+                $message = array_key_exists('statusMessage', $client) ? $client['statusMessage'] : 'Something went wrong in bkash transactions';
+                return $this->leafwrapResponse(true, false, 'error', 400, $message, $client);
             }
 
             $payload = ['response' => $client, 'url' => $client['bkashURL']];

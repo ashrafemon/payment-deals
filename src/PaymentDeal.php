@@ -11,15 +11,15 @@ use Leafwrap\PaymentDeals\Services\StripeService;
 
 class PaymentDeal extends BaseService
 {
-    public function init($planData, $amount, $userId, $gateway, $currency = 'usd', $baseAmount = 0): void
+    public function init($planData, $amount, $userId, $gateway, $currency = 'usd', $exchangeAmount = 0): void
     {
-        PaymentDeal::$planData      = $planData;
-        BaseService::$currency      = strtolower($currency);
-        BaseService::$amount        = $amount;
-        BaseService::$userId        = $userId;
-        BaseService::$gateway       = $gateway;
-        BaseService::$baseAmount    = $baseAmount;
-        BaseService::$transactionId = strtoupper(uniqid('trans_'));
+        PaymentDeal::$planData       = $planData;
+        BaseService::$currency       = strtolower($currency);
+        BaseService::$amount         = $amount;
+        BaseService::$userId         = $userId;
+        BaseService::$gateway        = $gateway;
+        BaseService::$exchangeAmount = $exchangeAmount;
+        BaseService::$transactionId  = strtoupper(uniqid('trans_'));
 
         $this->setFeedback($this->verifyCredentials());
         if ($this->feedback()['isError']) {

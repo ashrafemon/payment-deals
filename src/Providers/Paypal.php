@@ -73,9 +73,13 @@ class Paypal implements ProviderContract
 
             $url = $this->baseUrl . $this->urls['request'];
 
-            $client = Http::withHeaders($headers)->post($url, ['intent' => 'CAPTURE', 'purchase_units' => [["reference_id" => uniqid(), "amount" => ["currency_code" => $data['currency'] ?? 'usd', "value" => (string) $data['amount']]]], 'application_context' => ['return_url' => $urls['success'], 'cancel_url' => $urls['cancel']]]);
+            $client = Http::withHeaders($headers)->post($url, ['intent' => 'CAPTURE', 'purchase_units' => [["reference_id" => uniqid(), "amount" => ["currency_code" => strtolower($data['currency']) ?? 'usd', "value" => (string) $data['amount']]]], 'application_context' => ['return_url' => $urls['success'], 'cancel_url' => $urls['cancel']]]);
 
             if (!$client->successful()) {
+                $errRes = $client->json();
+                if (array_key_exists('details', $errRes) && count($errRes['details'])) {
+                    return $this->leafwrapResponse(true, false, 'error', 400, $errRes['details'][0]['description'], $client->json());
+                }
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Paypal payment request problem...', $client->json());
             }
 

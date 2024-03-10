@@ -24,7 +24,7 @@ Ongoing Updates: The Payment Deal Library is actively maintained, meaning you'll
 
 You should ensure that your web server has the following minimum PHP version and extensions:
 
-- PHP >= 8.0
+-   PHP >= 8.0
 
 ### Installation:
 
@@ -52,7 +52,7 @@ https://documenter.getpostman.com/view/7667667/2s9YBz3b3S
 
 ### Usages
 
-- Create a payment request
+-   Create a payment request
 
 ```bash
 use Leafwrap\PaymentDeals\Facades\PaymentDeal;
@@ -67,12 +67,12 @@ Route::post('payment', function () {
         1. Pricing Package // an array
         2. Amount // float or int
         3. User ID // string
-        4. Gateway Name // string (ex: paypal, stripe, razorpay, bkash)
-        5. Currency // string (ex: usd, inr, bdt)
-        6. Base Amount // float
+        4. Gateway Name // string (ex: paypal, stripe, razorpay, bkash, paystack)
+        5. Currency // string (ex: USD, INR, BDT)
+        6. Exchange Amount // float (if currency is not usd)
     */
 
-    PaymentDeal::init($plan, $amount, $userId, $gateway, $currency);
+    PaymentDeal::init($plan, $amount, $userId, $gateway, $currency, $exchangeAmount);
 
     // Pay provides you to request a payment
     PaymentDeal::pay();
@@ -82,7 +82,7 @@ Route::post('payment', function () {
 });
 ```
 
-- Query your payment (Optional)
+-   Query your payment (Optional)
 
 ```bash
 use Leafwrap\PaymentDeals\Facades\PaymentDeal;
@@ -98,7 +98,7 @@ Route::post('payment-query', function () {
 });
 ```
 
-- Assign to your plan (Required)
+-   Assign to your plan (Required)
 
 ```bash
 use Leafwrap\PaymentDeals\Models\PaymentTransaction;

@@ -13,7 +13,7 @@ class Stripe implements ProviderContract
 
     private array $tokens;
     private string $baseUrl = 'https://api.stripe.com';
-    private array $urls = ['token' => null, 'request' => '/v1/checkout/sessions', 'query' => '/v1/checkout/sessions/:orderId',];
+    private array $urls     = ['token' => null, 'request' => '/v1/checkout/sessions', 'query' => '/v1/checkout/sessions/:orderId'];
 
     public function __construct(private string $secretKey)
     {
@@ -40,9 +40,13 @@ class Stripe implements ProviderContract
 
             $url = $this->baseUrl . $this->urls['request'];
 
-            $client = Http::withHeaders($headers)->asForm()->post($url, ['line_items' => [['price_data' => ['currency' => $data['currency'] ?? 'usd', 'product_data' => ['name' => 'Product'], 'unit_amount_decimal' => $data['amount'] * 100], 'quantity' => 1,]], 'mode' => "payment", 'success_url' => $urls['success'], 'cancel_url' => $urls['cancel'],]);
+            $client = Http::withHeaders($headers)->asForm()->post($url, ['line_items' => [['price_data' => ['currency' => strtolower($data['currency']) ?? 'usd', 'product_data' => ['name' => 'Product'], 'unit_amount_decimal' => $data['amount'] * 100], 'quantity' => 1]], 'mode' => "payment", 'success_url' => $urls['success'], 'cancel_url' => $urls['cancel']]);
 
             if (!$client->successful()) {
+                $errRes = $client->json();
+                if (array_key_exists('error', $errRes) && array_key_exists('message', $errRes['error'])) {
+                    return $this->leafwrapResponse(true, false, 'error', 400, $errRes['error']['message'], $client->json());
+                }
                 return $this->leafwrapResponse(true, false, 'error', 400, 'Stripe payment request problem...', $client->json());
             }
 

@@ -13,7 +13,7 @@ class RazorPay implements ProviderContract
 
     private array $tokens;
     private string $baseUrl = 'https://api.razorpay.com';
-    private array $urls = ['token' => null, 'request' => '/v1/payment_links', 'query' => '/v1/payment_links/:orderId',];
+    private array $urls     = ['token' => null, 'request' => '/v1/payment_links', 'query' => '/v1/payment_links/:orderId'];
 
     public function __construct(private string $appKey, private string $secretKey)
     {
@@ -40,9 +40,13 @@ class RazorPay implements ProviderContract
 
             $url = $this->baseUrl . $this->urls['request'];
 
-            $client = Http::withBasicAuth($this->tokens[0], $this->tokens[1])->withHeaders($headers)->post($url, ["amount" => $data['amount'], "currency" => strtoupper($data['currency']) ?? 'USD', "description" => $data['description'] ?? '', "customer" => ["name" => $data['customer']['name'] ?? 'Payment Deal', "contact" => $data['customer']['contact'] ?? '01900000000', "email" => $data['customer']['email'] ?? 'ashraf.emon143@gmail.com',], "notify" => ["sms" => true, "email" => true], "reminder_enable" => true, "reference_id" => uniqid(), "expire_by" => strtotime(now()->addMinutes(20)), "accept_partial" => false, "callback_url" => $urls['success'], "callback_method" => 'get',]);
+            $client = Http::withBasicAuth($this->tokens[0], $this->tokens[1])->withHeaders($headers)->post($url, ["amount" => $data['amount'], "currency" => strtoupper($data['currency']) ?? 'USD', "description" => $data['description'] ?? '', "customer" => ["name" => $data['customer']['name'] ?? 'Payment Deal', "contact" => $data['customer']['contact'] ?? '01900000000', "email" => $data['customer']['email'] ?? 'ashraf.emon143@gmail.com'], "notify" => ["sms" => true, "email" => true], "reminder_enable" => true, "reference_id" => uniqid(), "expire_by" => strtotime(now()->addMinutes(20)), "accept_partial" => false, "callback_url" => $urls['success'], "callback_method" => 'get']);
 
             if (!$client->successful()) {
+                $errRes = $client->json();
+                if (array_key_exists('error', $errRes) && array_key_exists('description', $errRes['error'])) {
+                    return $this->leafwrapResponse(true, false, 'error', 400, $errRes['error']['description'], $client->json());
+                }
                 return $this->leafwrapResponse(true, false, 'error', 400, 'RazorPay payment request problem...', $client->json());
             }
 
