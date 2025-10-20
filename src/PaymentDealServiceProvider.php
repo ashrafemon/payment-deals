@@ -23,6 +23,8 @@ class PaymentDealServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__ . '/../configs/payment_gateways.php', 'payment_gateways');
         $this->mergeConfigFrom(__DIR__ . '/../configs/currency_converters.php', 'payment_gateways');
-        $this->app->singleton('PaymentDeal', fn($app) => new PaymentDeal($app));
+        $this->app->singleton('PaymentDeal', function ($app) {
+            return new PaymentDeal($app->make(\Leafwrap\PaymentDeals\Services\PaymentService::class));
+        });
     }
 }
