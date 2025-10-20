@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Http;
+
 class CurrencyConverter
 {
     private string $apiKey;

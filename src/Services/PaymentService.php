@@ -39,16 +39,18 @@ class PaymentService
             return $this->helper->funcResponse(true, false, 'error', 404, 'Invalid credentials.');
         }
 
-        $paymentGateway = match ($gateway) {
+        $gatewayClass = match ($gateway) {
             'paypal'   => PaypalGateway::class,
             'stripe'   => StripeGateway::class,
             'bkash'    => BkashGateway::class,
             'razorpay' => RazorPayGateway::class,
             'paystack' => PayStackGateway::class,
         };
+
+        $paymentGateway = new $gatewayClass($this->helper);
         $paymentGateway->setCredentials([
             'app_key'    => $credentials['app_key'] ?? '',
-            'app_secret' => $credentials['app_key'] ?? '',
+            'app_secret' => $credentials['app_secret'] ?? '',
             'username'   => $credentials['username'] ?? '',
             'password'   => $credentials['password'] ?? '',
             'is_sandbox' => $credentials['is_sandbox'] ?? false,
