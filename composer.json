@@ -23,8 +23,7 @@
         "illuminate/routing": "^11.0",
         "illuminate/config": "^11.0",
         "illuminate/view": "^11.0",
-        "illuminate/database": "^11.0",
-        "illuminate/foundation": "^11.0"
+        "illuminate/database": "^11.0"
     },
     "extra": {
         "laravel": {
