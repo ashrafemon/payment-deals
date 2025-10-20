@@ -16,11 +16,12 @@ class PaymentDeal
     {
     }
 
-    public function init(array $planData, float $amount, string $userId, string $gateway, string $currency = 'usd', float $exchangeRate = 0): void
-    {
+    public function init(
+        array $planData, float $amount, string $userId, string $gateway, array $credentialCondition = [], string $currency = 'usd', float $exchangeRate = 0
+    ): void {
         $this->transactionId = strtoupper(uniqid('trans_'));
 
-        $gatewayCredentials = $this->paymentService->getGatewayCredentials($gateway);
+        $gatewayCredentials = $this->paymentService->getGatewayCredentials($gateway, $credentialCondition);
         if ($gatewayCredentials['isError']) {
             $this->canProcess = false;
             return;
@@ -65,6 +66,11 @@ class PaymentDeal
         }
     }
 
+    public function credentials(string $gateway, array $condition = [])
+    {
+        $this->response = $this->paymentService->getGatewayCredentials($gateway, $condition);
+    }
+
     public function checkout(): void
     {
         if (! $this->canProcess) {
@@ -77,14 +83,14 @@ class PaymentDeal
         ]);
     }
 
-    public function query($transactionId): void
+    public function query(string $transactionId, array $credentialCondition = []): void
     {
-        $this->response = $this->paymentService->fetchTransaction($transactionId);
+        $this->response = $this->paymentService->fetchTransaction($transactionId, $credentialCondition);
     }
 
-    public function execute($transactionId): void
+    public function execute(string $transactionId, array $credentialCondition = []): void
     {
-        $this->response = $this->paymentService->executeTransaction($transactionId);
+        $this->response = $this->paymentService->executeTransaction($transactionId, $credentialCondition);
     }
 
     public function getResponse(): array

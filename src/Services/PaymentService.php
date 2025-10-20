@@ -15,6 +15,7 @@ class PaymentService
 {
     private array $allowedGateways;
     private mixed $gateway;
+    private array $credentials;
 
     public function __construct(private readonly Helper $helper)
     {
@@ -76,6 +77,8 @@ class PaymentService
             return $this->helper->funcResponse(true, false, 'error', 404, 'Payment gateway not found');
         }
 
+        $this->credentials = $paymentGateway['credentials'];
+
         return $this->helper->funcResponse(false, true, 'success', 200, 'Payment gateway found', $paymentGateway);
     }
 
@@ -123,7 +126,7 @@ class PaymentService
         }
     }
 
-    public function fetchTransaction($transactionId): array
+    public function fetchTransaction(string $transactionId, array $condition = []): array
     {
         try {
             if (! $exist = PaymentTransaction::query()->where(['transaction_id' => $transactionId, 'status' => 'request'])->first()) {
@@ -144,12 +147,14 @@ class PaymentService
                 return $this->helper->funcResponse(true, false, 'error', 404, 'Order id not found');
             }
 
-            $gatewayCredentials = $this->getGatewayCredentials($exist->gateway);
-            if ($gatewayCredentials['isError']) {
-                return $this->helper->funcResponse(true, false, 'error', 404, 'Gateway credentials not found');
+            if (! $this->credentials) {
+                $gatewayCredentials = $this->getGatewayCredentials($exist->gateway, $condition);
+                if ($gatewayCredentials['isError']) {
+                    return $this->helper->funcResponse(true, false, 'error', 404, 'Gateway credentials not found');
+                }
             }
 
-            $getGateway = $this->getGateway($exist->gateway, $gatewayCredentials['data']);
+            $getGateway = $this->getGateway($exist->gateway, $this->credentials);
             if ($getGateway['isError']) {
                 return $this->helper->funcResponse(true, false, 'error', 404, 'Gateway not available');
             }
@@ -165,10 +170,10 @@ class PaymentService
         }
     }
 
-    public function executeTransaction($transactionId): array
+    public function executeTransaction(string $transactionId, array $condition = []): array
     {
         try {
-            $order = $this->fetchTransaction($transactionId);
+            $order = $this->fetchTransaction($transactionId, $condition);
             if ($order['isError']) {
                 return $this->helper->funcResponse(true, false, 'error', 404, $order['message']);
             }

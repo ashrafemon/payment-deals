@@ -68,11 +68,12 @@ Route::post('payment', function () {
         2. Amount // float or int
         3. User ID // string
         4. Gateway Name // string (ex: paypal, stripe, razorpay, bkash, paystack)
-        5. Currency // string (ex: USD, INR, BDT)
-        6. Exchange Amount // float (if currency is not usd)
+        5. Credentials Condition // [tenant_id = 1]
+        6. Currency // string (ex: USD, INR, BDT)
+        7. Exchange Rate // float (if currency is not usd)
     */
 
-    PaymentDeal::init($plan, $amount, $userId, $gateway, $currency, $exchangeRate);
+    PaymentDeal::init($plan, $amount, $userId, $gateway, $credentialCondition, $currency, $exchangeRate);
 
     // Pay provides you to request a payment
     PaymentDeal::checkout();
