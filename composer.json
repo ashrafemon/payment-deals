@@ -21,7 +21,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Leafwrap\\PaymentDeals\\PaymentDealsServiceProvider"
+                "Leafwrap\\PaymentDeals\\PaymentDealServiceProvider"
             ],
             "aliases": {
                 "PaymentDeal": "Leafwrap\\PaymentDeals\\Facades\\PaymentDeal"
