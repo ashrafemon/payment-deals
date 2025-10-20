@@ -14,7 +14,7 @@ class PaymentController extends Controller
     {
     }
 
-    public function __invoke(Request $request, $transactionId): array
+    public function __invoke(Request $request, string $transactionId)
     {
         try {
             $type = $request->input('type') ?? 'execute';

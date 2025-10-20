@@ -26,7 +26,7 @@ class PaymentDeal
             $this->canProcess = false;
             return;
         }
-        $credentials = $gatewayCredentials['data'];
+        $credentials = $gatewayCredentials['data']['credentials'];
 
         $currencyAmount = $this->paymentService->getIsCurrencySupported($gateway, $currency, $amount, $exchangeRate);
         if ($currencyAmount['isError']) {
@@ -52,13 +52,12 @@ class PaymentDeal
         }
         $this->gateway = $paymentGateway['data'];
 
-        $activity = $this->paymentService->transactionActivity([
-            'transactionId' => $this->transactionId,
-            'amount'        => $this->amount,
-            'currency'      => $this->currency,
-            'planData'      => $planData,
-            'userId'        => $userId,
-            'gateway'       => $gateway,
+        $activity = $this->paymentService->transactionActivity($this->transactionId, [
+            'amount'   => $this->amount,
+            'currency' => $this->currency,
+            'planData' => $planData,
+            'userId'   => $userId,
+            'gateway'  => $gateway,
         ]);
         if ($activity['isError']) {
             $this->canProcess = false;
@@ -81,6 +80,11 @@ class PaymentDeal
             'amount'         => $this->amount,
             'transaction_id' => $this->transactionId,
         ]);
+        if (! $this->response['isError']) {
+            $this->paymentService->transactionActivity($this->transactionId, [
+                'request_payload' => $this->response['data'],
+            ]);
+        }
     }
 
     public function query(string $transactionId, array $credentialCondition = []): void

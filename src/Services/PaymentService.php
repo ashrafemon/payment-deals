@@ -15,7 +15,7 @@ class PaymentService
 {
     private array $allowedGateways;
     private mixed $gateway;
-    private array $credentials;
+    private array $credentials = [];
 
     public function __construct(private readonly Helper $helper)
     {
@@ -104,12 +104,12 @@ class PaymentService
         return $this->helper->funcResponse(false, true, 'success', 200, 'Callback url fetch successfully', $urls);
     }
 
-    public function transactionActivity(array $data): array
+    public function transactionActivity(string $transactionId, array $data): array
     {
         try {
-            if (! $exist = PaymentTransaction::query()->where(['transaction_id' => $data['transactionId']])->first()) {
+            if (! $exist = PaymentTransaction::query()->where(['transaction_id' => $transactionId])->first()) {
                 $payload = [
-                    'transaction_id' => $data['transactionId'],
+                    'transaction_id' => $transactionId,
                     'user_id'        => $data['userId'],
                     'gateway'        => $data['gateway'],
                     'amount'         => $data['amount'],
@@ -181,6 +181,26 @@ class PaymentService
             $execute = $this->gateway->verify($order['data']['id']);
             if ($execute['isError']) {
                 return $this->helper->funcResponse(true, false, 'error', 404, $execute['message']);
+            }
+
+            if ($execute['isSuccess'] && $execute['data']) {
+                $data    = $execute['data'];
+                $gateway = $order['data']['gateway'];
+                $isOk    = false;
+
+                if (array_key_exists('status', $data) || array_key_exists('transactionStatus', $data)) {
+                    $isOk = match ($gateway) {
+                        'bkash'    => $data['transactionStatus'] === 'Completed',
+                        'paypal'   => $data['status'] === 'COMPLETED',
+                        'paystack' => $data['status'] === 'paid',
+                        'razorpay' => $data['status'] === 'paid',
+                        'stripe'   => $data['status'] === 'complete',
+                    };
+                }
+
+                if ($isOk) {
+                    $this->transactionActivity($transactionId, ['status' => 'completed', 'response_payload' => $execute['data']]);
+                }
             }
 
             return $this->helper->funcResponse(false, true, 'success', 200, 'Transaction execute success', $execute['data']);

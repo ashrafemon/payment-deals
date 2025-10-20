@@ -71,8 +71,8 @@
                 loading: true,
                 completed: false,
                 hasCallback: false,
-                callbackUrl: null
-                callbackBtnText: 'Redirect to Transaction'
+                callbackUrl: null,
+                callbackBtnText: 'Redirect to Transaction',
 
                 async init() {
                     try {
