@@ -68,17 +68,18 @@ Route::post('payment', function () {
         2. Amount // float or int
         3. User ID // string
         4. Gateway Name // string (ex: paypal, stripe, razorpay, bkash, paystack)
-        5. Currency // string (ex: USD, INR, BDT)
-        6. Exchange Amount // float (if currency is not usd)
+        5. Credentials Condition // [tenant_id = 1]
+        6. Currency // string (ex: USD, INR, BDT)
+        7. Exchange Rate // float (if currency is not usd)
     */
 
-    PaymentDeal::init($plan, $amount, $userId, $gateway, $currency, $exchangeAmount);
+    PaymentDeal::init($plan, $amount, $userId, $gateway, $credentialCondition, $currency, $exchangeRate);
 
     // Pay provides you to request a payment
-    PaymentDeal::pay();
+    PaymentDeal::checkout();
 
     // Feedback provides you payment url link & payment response
-    return PaymentDeal::feedback();
+    return PaymentDeal::getResponse();
 });
 ```
 
@@ -94,7 +95,7 @@ Route::post('payment-query', function () {
     PaymentDeal::query($transactionId);
 
     // Feedback provides you payment response
-    return PaymentDeal::feedback();
+    return PaymentDeal::getResponse();
 });
 ```
 

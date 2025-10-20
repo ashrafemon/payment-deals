@@ -1,32 +1,38 @@
 {
-  "name": "leafwrap/payment-deals",
-  "description": "A Laravel-based online payment gateway solution featuring popular payment gateways like PayPal, Stripe, Razorpay, bKash, and more. Seamlessly integrate secure and diverse payment options into your web applications with ease.",
-  "type": "library",
-  "license": "MIT",
-  "autoload": {
-    "psr-4": {
-      "Leafwrap\\PaymentDeals\\": "src/"
+    "name": "leafwrap/payment-deals",
+    "description": "A Laravel-based online payment gateway solution featuring popular payment gateways like PayPal, Stripe, Razorpay, bKash, and more. Seamlessly integrate secure and diverse payment options into your web applications with ease.",
+    "type": "library",
+    "version": "1.0.8",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Leafwrap\\PaymentDeals\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Ashraf Emon",
+            "email": "ashraf.emon143@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Leafwrap\\PaymentDeals\\PaymentDealServiceProvider"
+            ],
+            "aliases": {
+                "PaymentDeal": "Leafwrap\\PaymentDeals\\Facades\\PaymentDeal"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true,
+        "preferred-install": "dist",
+        "optimize-autoloader": true
     }
-  },
-  "authors": [
-    {
-      "name": "Ashraf Emon",
-      "email": "ashraf.emon143@gmail.com"
-    }
-  ],
-  "minimum-stability": "dev",
-  "prefer-stable": true,
-  "config": {
-    "sort-packages": true,
-    "preferred-install": "dist",
-    "optimize-autoloader": true
-  },
-  "require": {},
-  "extra": {
-    "laravel": {
-      "providers": [
-        "Leafwrap\\PaymentDeals\\PaymentDealServiceProvider"
-      ]
-    }
-  }
 }

@@ -1,44 +1,40 @@
 <?php
-
 namespace Leafwrap\PaymentDeals\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Exception;
+use Illuminate\Http\Request;
 use Leafwrap\PaymentDeals\Facades\PaymentDeal;
+use Leafwrap\PaymentDeals\Libs\Helper;
 use Leafwrap\PaymentDeals\Models\PaymentTransaction;
-use Leafwrap\PaymentDeals\Traits\Helper;
 
 class PaymentController extends Controller
 {
-    use Helper;
+    public function __construct(private readonly Helper $helper)
+    {
+    }
 
-    public function check($transactionId)
+    public function __invoke(Request $request, string $transactionId)
     {
         try {
-            $type = request()->input('type') ?? 'execute';
-
-            if (!$transaction = PaymentTransaction::query()->where(['transaction_id' => $transactionId])->first()) {
-                return $this->leafwrapMessage('Transaction not found');
+            $type = $request->input('type') ?? 'execute';
+            if (! $transaction = PaymentTransaction::query()->where(['transaction_id' => $transactionId])->first()) {
+                return $this->helper->response(['message' => 'Transaction not found', 'status' => 'error', 'statusCode' => 404]);
             }
 
             if ($transaction->status === 'completed' && $type === 'execute') {
-                return $this->leafwrapMessage('Payment already completed', 400);
+                return $this->helper->response(['message' => 'Payment already completed', 'status' => 'error', 'statusCode' => 400]);
             }
 
             match ($type) {
-                'query' => PaymentDeal::query($transactionId),
+                'query'   => PaymentDeal::query($transactionId),
                 'execute' => PaymentDeal::execute($transactionId),
             };
 
-            $res = PaymentDeal::feedback();
-
-            if ($res['isError']) {
-                return $this->leafwrapMessage($res['message'], $res['statusCode']);
-            }
-
-            return $this->leafwrapEntity($res['data'], $res['statusCode'], $res['status'], $res['message']);
+            $res = PaymentDeal::getResponse();
+            return $this->helper->response(['status' => $res['status'], 'statusCode' => $res['statusCode'], 'message' => $res['message'], 'data' => $res['data']]);
         } catch (Exception $e) {
-            return $this->leafwrapServerError($e);
+            return $this->helper->response(['status' => 'server_error', 'statusCode' => 500, 'message' => $e->getMessage()]);
         }
     }
 }

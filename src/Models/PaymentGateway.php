@@ -1,5 +1,4 @@
 <?php
-
 namespace Leafwrap\PaymentDeals\Models;
 
 use Illuminate\Database\Eloquent\Model;

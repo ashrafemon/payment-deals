@@ -52,6 +52,10 @@
                 </table>
                 <div class="flex items-center justify-center gap-4">
                     <a href="/" class="px-6 py-2 rounded-md bg-blue-500 uppercase text-white">Go Home</a>
+                    <template x-if="hasCallback">
+                        <a :href="callbackUrl" class="px-6 py-2 rounded-md bg-blue-500 uppercase text-white"
+                            x-text="callbackBtnText"></a>
+                    </template>
                 </div>
             </div>
         </div>
@@ -66,34 +70,38 @@
                 title: '',
                 loading: true,
                 completed: false,
+                hasCallback: false,
+                callbackUrl: null,
+                callbackBtnText: 'Redirect to Transaction',
 
                 async init() {
-                    let url = new URLSearchParams(window.location.search)
-                    this.status = url.get('status')
-                    this.gateway = url.get('gateway')
-                    this.transactionId = url.get('transaction_id')
+                    try {
+                        const url = new URLSearchParams(window.location.search)
+                        this.status = url.get('status')
+                        this.gateway = url.get('gateway')
+                        this.transactionId = url.get('transaction_id')
 
-                    await fetch(
+                        const req = await fetch(
                             `${window.origin}/api/v1/online-payment-check/${this.transactionId}`, {
                                 method: 'GET',
                                 headers: {
                                     Accept: 'application/json'
                                 }
-                            })
-                        .then(res => res.json())
-                        .then(async (res) => {
-                            this.loading = false;
+                            });
+                        const res = await req.json()
+                        this.loading = false;
 
-                            if (res.status !== 'success') {
-                                this.title = res.message;
-                                this.completed = false;
-                                return;
-                            }
+                        if (res.status !== 'success') {
+                            this.title = res.message || 'Payment failed.';
+                            this.completed = false;
+                            return;
+                        }
 
-                            this.title = 'Payment Successful';
-                            this.completed = true;
+                        this.title = 'Payment Successful';
+                        this.completed = true;
 
-                            let ipnCall = await fetch(`${window.origin}/api/v1/assign-plan`, {
+                        const ipnCallReq = await fetch(
+                            `${window.origin}/api/v1/assign-plan`, {
                                 method: "POST",
                                 headers: {
                                     Accept: 'application/json',
@@ -103,8 +111,26 @@
                                     transaction_id: this.transactionId
                                 })
                             });
-                        })
-                        .catch(err => console.log(err))
+                        const ipnCallRes = await ipnCallReq.json()
+
+                        if (
+                            ipnCallRes?.status === 'success' &&
+                            ipnCallRes?.data?.callback_url
+                        ) {
+                            this.callbackUrl = ipnCallRes.data.callback_url
+                            this.callbackBtnText = ipnCallRes?.data?.callback_text ??
+                                'Redirect to Transaction'
+                            this.hasCallback = true;
+                            if (ipnCallRes?.data?.callback_action === 'auto') {
+                                window.open(ipnCallRes.data.callback_url);
+                            }
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        this.loading = false;
+                        this.title = 'An unexpected error occurred. Please try again.';
+                        this.completed = false;
+                    }
                 }
             }))
         })
